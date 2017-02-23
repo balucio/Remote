@@ -7,18 +7,33 @@
 #ifndef Device_h
 #define Device_h
 
+#include "WString.h"
+#include "Key.h"
+
 class Device {
   
   public:
-    Device(String name, int pulse, int code_len, unsigned long int code_on, unsigned long int code_off);
+
+    static const int MAX_NAME_LENGTH = 16;
+ 
+    Device(String &dev_name);
+    ~Device();
+
+    String getName();
+    Key * getKeys();
+    
+    void appendKey( String &key_name, int pulse,  long int code );
+    void removeKey( String &key_name );
 
   private:
-    String name;
-    int pulse;
-    int code_len;
-    int code_on;
-    int code_off;
+    String dev_name;
+    Key * first_key = NULL;
+    Key * last_key = NULL;
+
+    Key * findPreviousKeyByName( String &key_name );
+
 };
 
 #endif
+
 
