@@ -5,69 +5,52 @@
 */
 
 #include "Arduino.h"
-#include "ESP8266WiFi.h"
-#include "WiFiClient.h"
-#include "ESP8266WebServer.h"
-#include "ESP8266mDNS.h"
-
-#include "Config.h"
+ADC_MODE(ADC_VCC);
 
 
-ESP8266WebServer server(80);
-Config cfg;
+#include "DeviceHandler.h"
+#include "ConnectionManager.h"
+
+#include "Portal.h"
+
+Portal portal;
+
+String ssid, pass;
 
 void setup() {
   
-  Serial.begin ( 9600 );
-
-  char * essid = cfg.getEssidName();
-  char * password = cfg.getEssidPassword();
-  char * msg = new char[256];
-
-  if ( strlen (essid) )
-  {
-       Serial.println ("Unable to get ESSID from Flash, going in config mode");
-       return;
-  }
-
-  sprintf(msg, "Got a Wifi ESSID %s and password %s, now I try to connect.", essid, password);
-  Serial.println (msg);
-
-  // Wait for connection
-  WiFi.disconnect();
-  WiFi.persistent(false);
+  Serial.begin(115200);
+  delay(2000);
   
-  WiFi.begin(essid, password);
-  isWifiConnected();
- 
-}
+  Serial.print("ESP8266 chip id: ");
+  Serial.println(ESP.getChipId());
+  Serial.print("ESP8266 velocita flash: ");
+  Serial.println(ESP.getFlashChipSpeed());
+  Serial.print("Tensione di alimentazione : ");
+  Serial.println(ESP.getVcc()); 
+  Serial.print("Ultimo motivo reset: ");
+  Serial.println(ESP.getResetReason());
 
-bool isWifiConnected(void) {
-  
-  int c = 0;
-  Serial.println("Waiting for Wifi to connect");
-
-  while ( c++ < 20 ) {
-
-    if (WiFi.status() == WL_CONNECTED) {
-      Serial.println("Connected, whit IP address: ");
-      Serial.println(WiFi.localIP());
-      return true;
-    }
-   
-    delay(1000);
-    Serial.println("Attempt to connect to Wifi failed, status: " + WiFi.status());    
+  Serial.println("Configuro connessione Wifi");
+  ConnectionManager::initConnection();
+  Serial.println("Avvio webserver");
+  while (!portal.setup()) {
+      Serial.println("Impossibile configurare Server HTTP");
+      delay(10000);
   }
-
-  Serial.println("Timeout, unable to connect to Wifi");
-  return false;
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  while (true) {
-   delay ( 10000 );
-   Serial.println("riavvio");
-  } 
+  portal.handleRequest();
+
+  if (portal.needRestart()) {
+    Serial.println("Riavvio il dispositivo");
+    delay(5000);
+    ESP.restart();
+  }
 }
+
+
+
+
 

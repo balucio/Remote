@@ -7,9 +7,9 @@
     <h2>Remote - Configurazione di base</h2>
     <input id="devicemax" type="hidden" value="{devicemax}">
     <input id="devicenum" type="hidden" value="{devicenum}">
-    <form class="form-horizontal col-sm-10 col-sm-offset-1">
+    <form name="wifidata" action="/setup/wify" method="POST" class="form-horizontal col-sm-10 col-sm-offset-1">
         <div class="panel panel-primary">
-            <div class="panel-heading"><h3 class="panel-title">Dati rete WIFY</h3></div>
+            <div class="panel-heading"><h3 class="panel-title">Dati rete Wifi</h3></div>
             <div class="panel-body">
                 <div class="form-group col-sm-6">
                     <label for="essid" class="col-sm-3 control-label">Nome rete Wify</label>
@@ -24,8 +24,14 @@
                     </div>
                 </div>
             </div>
+            <div class="panel-footer clearfix">
+                <div class="pull-right">
+                    <button type="submit" class="btn btn-warning">Salva</button>
+                </div>
+            </div>
         </div>
-
+    </form>
+    <form name="devicedata" action="/setup/device" method="POST" class="form-horizontal col-sm-10 col-sm-offset-1">
         <div class="panel panel-info">
             <div class="panel-heading clearfix">
                 <button id="adddevice" type="button" class="btn btn-success hidden pull-right">Aggiungi</button>
