@@ -15,11 +15,17 @@ class Device {
   public:
 
     static const int MAX_NAME_LENGTH = 16;
+    static String TYPES[];
+    static String TYPES_DESCRIPTION[];
+    static const int TYPE_NUM=2;
  
-    Device(String &dev_name);
+    Device(const String &dev_name, const String &dev_type);
     ~Device();
 
+    void setName(const String &new_name);
+    void setType(const String &new_type);
     String getName();
+    String getType();
     Key * getKeys();
     
     void appendKey( String &key_name, int pulse,  long int code );
@@ -27,6 +33,7 @@ class Device {
 
   private:
     String dev_name;
+    String dev_type;
     Key * first_key = NULL;
     Key * last_key = NULL;
 

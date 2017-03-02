@@ -6,8 +6,9 @@
 
 #include "Device.h"
 
-Device::Device(String &dev_name)
-  : dev_name(dev_name)
+Device::Device(const String &dev_name, const String &dev_type)
+  : dev_name(dev_name),
+    dev_type(dev_type)
 {}
 
 Device::~Device() {
@@ -20,12 +21,19 @@ Device::~Device() {
   }
 }
 
+String Device::TYPES[Device::TYPE_NUM] = { "IRDA", "RF433"};
+String Device::TYPES_DESCRIPTION[Device::TYPE_NUM] = { "Infrarossi", "Radio Freq. 433Mhz" };
+
+void Device::setName(const String &new_name) { dev_name = new_name; }
+void Device::setType(const String &new_type) { dev_type = new_type; }
+
 String Device::getName() {  return dev_name; }
+String Device::getType() {  return dev_type; }
 Key * Device::getKeys() { return  first_key; }
 
 void Device::appendKey( String &key_name, int pulse, long int code ) {
 
-  if (key_name.length() >Key::MAX_KEY_NAME_LEN)
+  if (key_name.length() > Key::MAX_KEY_NAME_LEN)
     return;
 
   Key * key = new Key( key_name, pulse, code );
