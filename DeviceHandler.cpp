@@ -6,134 +6,246 @@
 
 #include "DeviceHandler.h"
 
-DeviceHandler::DeviceHandler() {
-  is_opened = SPIFFS.begin();
+DeviceHandler::DeviceHandler():
+  is_opened(SPIFFS.begin()),
+  device(NULL)
+{}
+
+
+DeviceHandler::~DeviceHandler() {
+  delete device;
 }
 
-int DeviceHandler::deviceCount() { return device_num; }
+boolean DeviceHandler::setDevice( const String &device_name, const String &device_type ) {
 
-String * DeviceHandler::listDeviceNames() {
+  if ( device && (device->getName() == device_name) )
+    return true;
 
-  Dir dir = SPIFFS.openDir("/");
+  if (device)
+    delete device;
 
-  String * names = NULL;
-  device_num = 0;
-  
-  while (dir.next())
-    device_num++;
+  if (device = loadDeviceFile( device_name )) {
 
-  names = new String[device_num];
-  dir = SPIFFS.openDir("/");
+    if (device->getType() != device_type) {
+      device->setType(device_type);
+       return saveDeviceFile( device );
+    }
+    
+  } else if (device = new Device(device_name, device_type)) {
 
-  device_num = 0;
+    if (!DeviceHandler::saveDeviceFile( device )) {
+      delete device;
+    } else {
+      // Invalidate device counter
+      DeviceHandler::recountDevices(true);
+    }
 
-  while (dir.next())
-    names[device_num] = dir.fileName();
-
-  return names;
+  }
+  return device != NULL;
 }
 
-Device * DeviceHandler::loadDevice( String &device_name ) {
+boolean DeviceHandler::setDevice( const String &device_name ) {
+
+  if ( device && (device->getName() == device_name) )
+    return true;
+
+  if (device)
+    delete device;
+
+  device = loadDeviceFile( device_name );
+  return device != NULL;
+}
+
+Device & DeviceHandler::getDevice() { return *device; }
+
+Device * DeviceHandler::loadDeviceFile( const String &device_name ) {
+
+  String file_name = "/" + device_name;
   
-  if (!SPIFFS.exists(device_name))
-    Serial.println("file " + device_name + " does not exits");
-    return NULL;
-
-  File f = SPIFFS.open( device_name, "w");
-
-  if (!f) {
-    Serial.println("file open failed");
+  if (!SPIFFS.exists(file_name)) {
+    Serial.println("GetDdvice: file " + file_name + " does not exits");
     return NULL;
   }
 
-  Device * device = new Device( device_name );
+  File f = SPIFFS.open( file_name, "r");
+
+  if (!f) {
+    Serial.println("Errore apertura file dispositivo");
+    return NULL;
+  }
+
+  // First line is device type
+  String line = f.readStringUntil('\n');
+
+  if (!line) {
+    Serial.println("Impossibile leggere il tipo di dispositivo");
+    return NULL;
+  }
+
+  line.remove( line.length() - 1);
+  Device * d = new Device( device_name, line );
 
   int sep1, sep2;
-  String line, key_name;
+  String key_name;
   int key_pulse;
   long int key_code;
-  
 
-  while ( line = f.readStringUntil('\n') ) {
-    sep1 = line.indexOf(';');
+  while ( f.available() ) {
+    line = f.readStringUntil(DeviceHandler::EOL);
+    sep1 = line.indexOf(DeviceHandler::SEP);
     if (sep1 == -1)
       continue;
     key_name = line.substring(0, sep1 - 1);
-    sep2 = line.indexOf(';', sep1 + 1);
+    sep2 = line.indexOf(DeviceHandler::SEP, sep1 + 1);
     if (sep2 == -1)
       continue;
     key_pulse = line.substring(sep1 + 1, sep2).toInt();
     key_code = line.substring(sep2 + 1).toInt();
 
-    device->appendKey( key_name, key_pulse, key_code );
+    d->appendKey( key_name, key_pulse, key_code );
   }
 
   f.close();
-  return device;
+  return d;
 }
 
-boolean DeviceHandler::deleteDevice( String &device_name ) {
+boolean DeviceHandler::renameDevice( const String &new_name) {
 
-  if (!SPIFFS.exists(device_name))
-      return true;
-  
-  boolean r = SPIFFS.remove(device_name);
+  if (!device) return false;
 
-  if (!r) {
-   Serial.print("DeleteDevice Error: unable to delete ");
-   Serial.println(device_name);
-  }
-
-  return r;
-};
-
-
-boolean DeviceHandler::renameDevice( String &old_name, String &new_name ) {
-
-  if (!SPIFFS.exists(old_name))
-      return false;
-  
-  boolean r = SPIFFS.rename(old_name, new_name);
-
-  if (!r) {
-    Serial.print("Rename Device Error: unable rename ");
-    Serial.print(old_name);
-    Serial.print(" in ");
-    Serial.println(new_name);
-  }
-
-  return r;
-};
-
-boolean DeviceHandler::saveDevice( Device * device ) {
-
-  if ( device == NULL ) {
-    Serial.println("SaveDevice Error: Null device");
+  if (DeviceHandler::existsDeviceFile( new_name ))
     return false;
-  }
 
-  File f = SPIFFS.open(device->getName(), "w");
+  if (DeviceHandler::renameDeviceFile( device->getName(), new_name)) {
+    device->setName(new_name);
+    return true;
+  }
+  return false;
+}
+
+boolean DeviceHandler::renameDeviceFile( const String &old_name, const String &new_name) { return SPIFFS.rename("/" + old_name, "/" + new_name); };
+
+boolean DeviceHandler::deleteDevice() {
+
+  if (!device) return false;
+
+  bool r = true;
+  if (DeviceHandler::existsDeviceFile( device->getName() ))
+    r = DeviceHandler::deleteDeviceFile( device->getName() );
+
+  // Invalidate device counter
+  DeviceHandler::recountDevices(true);
+
+  if (r) { delete device; }
+  return r;
+}
+
+boolean DeviceHandler::deleteDeviceFile( const String &device_name ) { return SPIFFS.remove("/" + device_name); }
+
+boolean DeviceHandler::saveDevice() {
+
+  if (!device)
+    return false;
+
+  return DeviceHandler::saveDeviceFile( device );
+}
+
+boolean DeviceHandler::saveDeviceFile( Device * device ) {
+
+  String fname = "/" + device->getName();
+  File f = SPIFFS.open(fname, "w");
 
   if (!f) {
-    Serial.println("SaveDevice Error: unable to open " + device->getName() + " file");
+    Serial.println("SaveDevice Error: unable to open " + fname + " file");
     return false;
   }
+
+  // Salvo il tipo di dispositivo
+  f.println( device->getType());
 
   Key * k = device->getKeys();
 
-  int k_pad_len;
   String k_name;
 
   while (k) {
     k_name = k->getName().substring(0, Key::MAX_KEY_NAME_LEN);
-    k_pad_len = k_name.length() - Key::MAX_KEY_NAME_LEN;
-    f.print(k_name +  String("          ").substring(0, k_pad_len));
-    f.println( String( k->getCode() ) );
-
+    f.print(k_name + DeviceHandler::SEP);
+    f.print(String( k->getPulse() ) + DeviceHandler::SEP);
+    f.print(String( k->getCode() ) + DeviceHandler::EOL);
     k = k->getNext();
   }
+
+  f.close();
 
   return true;
 }
 
+boolean DeviceHandler::existsDeviceFile( const String &device_name ) { return SPIFFS.exists("/" + device_name); }
 
+String * DeviceHandler::getDevicesName() {
+
+  String * names = NULL;
+
+  int c = getDevicesNum();
+
+  if (c <= 0) return NULL;
+    
+  names = new String[c];
+
+  Dir dir = SPIFFS.openDir("/");
+
+  while (dir.next())
+    names[--c] = dir.fileName().substring(1);
+
+  return names;
+
+}
+
+int DeviceHandler::getDevicesNum() { return recountDevices(false); }
+
+int DeviceHandler::recountDevices(bool force) {
+
+  static int device_num = -1;
+
+  if (device_num >= 0 && !force)
+    return device_num;
+
+  Dir dir = SPIFFS.openDir("/");
+  device_num = 0;
+  
+  while (dir.next())
+    device_num++;
+
+  return device_num;
+
+}
+
+int DeviceHandler::getDeviceTypesNum() { return Device::TYPE_NUM; }
+String * DeviceHandler::getDeviceTypes() { return Device::TYPES; }
+String * DeviceHandler::getDeviceTypesDescription() { return Device::TYPES_DESCRIPTION; }
+
+
+boolean DeviceHandler::isValidDeviceName(const String &device_name) {
+  return DeviceHandler::parseAlphaNumString(device_name, Device::MAX_NAME_LENGTH);
+}
+
+boolean DeviceHandler::isValidDeviceType(const String &device_type) {
+
+  for (int i = 0; i < Device::TYPE_NUM; i++) {
+    if (Device::TYPES[i] == device_type)
+      return true;
+  }
+  return false;
+}
+
+boolean DeviceHandler::parseAlphaNumString(const String &s, const int l) {
+
+
+  for(byte i=0; i<s.length(); i++) {
+    if(!isAlphaNumeric(s.charAt(i)))
+      return false;
+  }
+
+  return (s.length() > 0 && s.length() <= l);
+
+}
