@@ -39,11 +39,14 @@ boolean Portal::setup() {
   server->on("/setup", std::bind(&Portal::handleSetup, this));
   server->on("/setup/wifilist", std::bind(&Portal::handleWifiList, this));
   server->on("/setup/editDevice", std::bind(&Portal::handleEditDevice, this));
+  server->on("/setup/getDeviceInfo", std::bind(&Portal::handleGetDeviceInfo, this));
+  server->on("/setup/deleteDevice", std::bind(&Portal::handleDeleteDevice, this));
 
   server->on("/setup/savewifi", std::bind(&Portal::handleSaveWifi, this));
   server->onNotFound (std::bind(&Portal::handleNotFound, this));
   server->begin(); // Web server start
 
+  dh = DeviceHandler();
   Serial.println("Avviato server HTTP");
 /*
   if (!ap_mode) {
@@ -103,60 +106,141 @@ void Portal::handleSaveWifi() {
 
   message.replace("{message}", msg);
   redirectHeaders("/setup");
-  
+
 }
 
 void Portal::handleEditDevice() {
 
-    String new_device="", old_device="";
+    String device_name="", device_type="";
 
     String msg;
-    bool error=true;
+    bool error = true;
 
-    if(!server->hasArg("old_device")) {
+    if(!server->hasArg("device_name") || !server->hasArg("device_type")) {
       
-      msg = "Errore: nome dispositivo non specificato";
+      msg = "Errore: nome o tipo dispositivo non specificati";
 
     } else {
 
-      old_device = server->arg("old_device");
+      device_name = server->arg("device_name");
+      device_type = server->arg("device_type");
 
-      if (!parseAlphaNumString(old_device, Device::MAX_NAME_LENGTH)) {
+      if (!DeviceHandler::isValidDeviceName(device_name)) {
 
         msg = "Errore: nome dispositivo non valido";
 
-      } else if(server->hasArg("new_device")) {
+      } else if (!DeviceHandler::isValidDeviceType(device_type)) {
 
-        new_device = server->arg("new_device");
+        msg = "Errore: tipo dispositivo non valido";
 
-        if (parseAlphaNumString(new_device, Device::MAX_NAME_LENGTH)) {
+      } else if (dh.setDevice( device_name, device_type ))  {
 
-          DeviceHandler dh = DeviceHandler();
-          error = !dh.renameDevice(old_device, new_device);
+        if (server->hasArg("new_device_name")) {
 
-          if (error)
-            msg = "Errore: impossibile rinominare il dispositivo";
-          else
-            msg = "Dispositivo rinominato";
-          
+          String new_device_name = server->arg("new_device_name");
+
+          if (DeviceHandler::isValidDeviceName(new_device_name)) {
+
+            if (dh.renameDevice(new_device_name)) {
+              error = false;
+              msg = "Dispositivo rinominato";
+              device_name = new_device_name;
+            } else {
+              msg = "Errore: impossibile rinominare il dispositivo";
+            }
+          } else {
+            msg = "Errore: nuovo nome del dispositivo non valido"; 
+          }
+
         } else {
-            msg = "Errore: nuovo nome non valido";
+          error = false;
+          msg = "Dispositivo correttamente configurato";
         }
-        
-        
+
       } else {
-        error = false;
-        msg = "Dispositivo creato";
-        // Dummy
+        msg = "Errore: impossibile configurare il dispositivo";
       }
     }
 
-    String json = "{ \"error\" : \"";
-    json += (error ? String("\"true\"") : String("\"false\","));
-    json += String("\"message\":\"") + msg + "\"}";
+    String json = "{ \"error\" :";
+    json += (error ? String("true") : String("false"));
+    json += String(",\"message\":\"") + msg + "\"}";
 
     server->send( 200, "text/json", json );
+}
+
+
+void Portal::handleDeleteDevice() {
+  
+  String device_name="", msg="\"\"";
+  bool error = true;
+
+  if(!server->hasArg("device_name")) {
+      
+    msg = "Errore: nome dispositivo non specificato";
+
+  } else {
+
+    device_name = server->arg("device_name");
+
+    if (!DeviceHandler::isValidDeviceName(device_name)) {
+
+      msg = "Errore: nome dispositivo non valido";
+
+    } else if (dh.setDevice(device_name)) {
+
+      if (dh.deleteDevice()) {
+        error = false;
+        msg = "Dispositivo eliminato correttamente";
+      } else {
+        msg = "Errore: impossibile eliminare il dispositivo";
+      }
+    }
   }
+
+  String json = "{\"error\":";
+  json += (error ? String("true") : String("false"));
+  json += String(",\"message\":\"") + msg + "\"}";
+
+  server->send( 200, "text/json", json );
+}
+
+void Portal::handleGetDeviceInfo() {
+  
+  String device_name="", msg="";
+  String dev_data="\"name\":\"\",\"type\":\"\", \"key\":[]";
+  bool error = true;
+
+  if(!server->hasArg("device_name")) {
+      
+    msg = "Errore: nome dispositivo non specificato";
+
+  } else {
+
+    device_name = server->arg("device_name");
+
+    if (!DeviceHandler::isValidDeviceName(device_name)) {
+
+      msg = "Errore: nome dispositivo non valido";
+
+    } else if (dh.setDevice(device_name)) {
+
+      dev_data = getDeviceData(dh.getDevice());
+      error = false;
+    } else {
+
+      msg = "Errore: impossibile selezionare il dispositivo";
+
+    }
+  }
+
+  String json = "{\"error\":";
+  json += (error ? String("true") : String("false"));
+  json += String(",\"device\": {") + dev_data + '}';
+  json += String(",\"message\":\"") + msg + "\"}";
+
+  server->send( 200, "text/json", json );
+}
 
 void Portal::handleWifiList() {
 
@@ -187,7 +271,7 @@ void Portal::handleSetup() {
     page.replace("{stext}", "");
     page.replace("{ssid}", ConnectionManager::getSsid());
     page.replace("{password}", ConnectionManager::getPassword());
-    page.replace("{script}", FPSTR(JAVASCRIPT_NETLIST));
+    page.replace("{script}", perpareJavascript(!ap_mode));
     page.replace("{warn}", FPSTR(HTML_WIFISAVE_WARNING));
 
     if (!ap_mode) {
@@ -272,33 +356,52 @@ void Portal::redirectHeaders(String where) {
 
 String Portal::getDevPanel() {
   
-  DeviceHandler dh = DeviceHandler();
   String devpane = FPSTR(HTML_DEV_PANEL);
-  String * list = dh.listDeviceNames();
-  int dn = dh.deviceCount();
+  String * list = DeviceHandler::getDevicesName();
+  int dn = DeviceHandler::getDevicesNum();
 
   String panelbody;
 
-  devpane += FPSTR(HTML_MODAL_DEV_NAME);
-  devpane += FPSTR(HTML_MODAL_DELETE);
-  
+  devpane += prepareModal(
+    String("device-edit"),
+    String("Modifica/Crea dispositivo"),
+    prepareDeviceForm(),
+    "saveDeviceData"
+  );
+  devpane += prepareModal(
+    String("device-delete"),
+    String("Elimina dispositivo"),
+    String("Eliminare il dispositivo <b class=\"device-name\"></b> e i comandi configurati?"),
+    "deleteDevice"
+  );
+
+  panelbody = FPSTR(HTML_DEV_LIST_TPL);
+  panelbody += "<div id=\"device-template\" class=\"hidden\">";
+  panelbody += FPSTR(HTML_DEV_LI_TPL);
+  panelbody += FPSTR(HTML_DEV_PANE_TPL);
+  panelbody += "</div>";
+
+  String alert = FPSTR(HTML_FULL_ALERT_TPL);
+  alert.replace("{message}", "Nessun dispositivo configurato");
+
   if (dn == 0) {
-    panelbody = FPSTR(HTML_FULL_ALERT_TPL);
-    panelbody.replace("{class}", "danger");
-    panelbody.replace("{message}", "Nessun dispositivo configurato");
+    panelbody.replace("{dev_li_list}", "");
+    panelbody.replace("{dev_pane_list}","");
+    alert.replace("{class}", "danger no-device-alert");
+    panelbody += alert;
     devpane.replace("{panel_body}", panelbody);
     return devpane;
   }
 
   String li = "", pane = "", wrk;
-  panelbody = FPSTR(HTML_DEV_LIST_TPL);
-  
+
   for (int i = 0; i < dn; i++) {
         wrk = FPSTR(HTML_DEV_LI_TPL);
         wrk.replace("{dev_name}", list[i]);
         li += wrk;
         wrk = FPSTR(HTML_DEV_PANE_TPL);
         wrk.replace("{dev_name}", list[i]);
+        wrk.replace("{dev_type}", "");
         pane += wrk;
   }
 
@@ -306,19 +409,68 @@ String Portal::getDevPanel() {
 
   panelbody.replace("{dev_li_list}", li);
   panelbody.replace("{dev_pane_list}", pane);
+  alert.replace("{class}", "danger no-device-alert hidden");
+  panelbody += alert;
   devpane.replace("{panel_body}", panelbody);
+
   return devpane;
     
 }
 
-boolean Portal::parseAlphaNumString(String &argument, int len) {
+String Portal::prepareDeviceForm() {
 
-  argument.trim();
+  String form = FPSTR(HTML_FORM_EDIT_DEVICE);
+  int qt = DeviceHandler::getDeviceTypesNum();
+  String tpl, options = "";
 
-  for(byte i=0; i<argument.length(); i++) {
-    if(!isAlphaNumeric(argument.charAt(i)))
-      return false;
+  for( int i=0; i < qt; i++){
+    tpl = FPSTR(HTML_OPTION_TPL);
+    tpl.replace("{value}", DeviceHandler::getDeviceTypes()[i]);
+    tpl.replace("{name}", DeviceHandler::getDeviceTypesDescription()[i]);
+    options += tpl;
+  }
+  form.replace("{device_types}", options);
+  return form;
+}
+
+String Portal::prepareModal(String const &id, String const &title, String const &body, String const &ok_callback) {
+
+  String modal = FPSTR(HTML_MODAL_TPL);
+  modal.replace("{id}", id);
+  modal.replace("{title}", title);
+  modal.replace("{body}", body);
+  modal.replace("{ok-callback}", ok_callback);
+  return modal;
+}
+
+
+String Portal::getDeviceData(Device &device) {
+
+  String json = "\"name\":\"" + device.getName() + "\",";
+  json += "\"type\":\"" + device.getType() + "\",";
+  json += "\"keys\":[ ";
+  Key * key = device.getKeys();
+
+  while (key) {
+    json += "{\"name\":\"" + key->getName() + "\",";
+    json += String("\"pulse\":\"") + key->getPulse() + "\",";
+    json += String("\"code\":\"") + key->getCode() + "\"},";
+    key = key->getNext();
+  }
+  json.remove(json.length() - 1);
+  json += "]";
+  return json;
+}
+
+String Portal::perpareJavascript(boolean full) {
+
+  String javascript = FPSTR(JAVASCRIPT_NETLIST);
+
+  if (full) {
+    javascript += FPSTR(JAVASCRIPT_EDIT_DEVICE);
+    javascript += FPSTR(JAVASCRIPT_DELETE_DEVICE);
   }
 
-  return (argument.length() > 0 && argument.length() <= len);
+  return javascript;
 }
+
