@@ -6,7 +6,7 @@
 
 #include "Key.h"
 
-static const int MAX_KEY_NAME_LEN = 10;
+const int Key::MAX_KEY_NAME_LEN = 10;
 
 Key::Key(String key_name, int pulse, long int code)
   : key_name(key_name),
