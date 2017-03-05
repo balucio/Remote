@@ -82,7 +82,6 @@ String ConnectionManager::encryptionCodeToString(int code) {
   }
 }
 
-
 WifiNetworks ConnectionManager::getNetworkList() {
 
   Serial.println("Avvio scansione reti");

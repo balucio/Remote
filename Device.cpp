@@ -53,20 +53,19 @@ void Device::removeKey( String &key_name ) {
 
   if ( prev_key == NULL) {
     
-    if ( first_key != NULL && first_key->getName() == key_name ) {
-      
-      prev_key = first_key;
-      first_key = prev_key->getNext();
-      delete prev_key;
-
-      if ( first_key == NULL ) {
-        last_key = NULL;
-      }
-
-    } else {
-
+    if ( first_key == NULL || first_key->getName() != key_name ) {
       return;
     }
+      
+    prev_key = first_key;
+    first_key = prev_key->getNext();
+    delete prev_key;
+
+    if ( first_key == NULL ) {
+      last_key = NULL;
+    }
+
+    return;
   }
 
   Key * next_key = prev_key->getNext();

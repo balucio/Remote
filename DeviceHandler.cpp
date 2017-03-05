@@ -63,7 +63,7 @@ Device * DeviceHandler::loadDeviceFile( const String &device_name ) {
   String file_name = "/" + device_name;
   
   if (!SPIFFS.exists(file_name)) {
-    Serial.println("GetDdvice: file " + file_name + " does not exits");
+    Serial.println("GetDedvice: file " + file_name + " does not exits");
     return NULL;
   }
 
@@ -136,7 +136,10 @@ boolean DeviceHandler::deleteDevice() {
   // Invalidate device counter
   DeviceHandler::recountDevices(true);
 
-  if (r) { delete device; }
+  if (r) { 
+    delete device;
+    device = NULL;
+  }
   return r;
 }
 

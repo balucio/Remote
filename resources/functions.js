@@ -1,12 +1,34 @@
-document.addEventListener('DOMContentLoaded', function(event) {
-    $('#device-delete').on('shown.bs.modal', function() {
-        $('#device-delete').find('b.device-name').text(
-            $('#devices-list').find('li.active a').attr('href').substring(8)
-        );
-    });
+/* Get network list */
+document.addEventListener("DOMContentLoaded", function(event) {
+    getNetworkList();
 });
+function getNetworkList() {
+    var a = new XMLHttpRequest;
+    a.onreadystatechange = function() {
+        if (a.readyState == XMLHttpRequest.DONE)
+            if (200 == a.status) {
+                var b = document.getElementById("ssid");
+                v = b.getAttribute("value");
+                for (b; b.firstChild;) b.removeChild(b.firstChild);
+                try {
+                    for (var c = JSON.parse(a.responseText), d = c.networks, e = 0; e < d.length; e++) {
+                        var f = document.createElement("option");
+                        f.value = d[e].name, f.text = d[e].name, "" != d[e].protection && (f.text += "(*)"), f.text += " db: " + d[e].quality, b.appendChild(f);
+                        if (d[e].name == v)
+                            f.selected=true;
+                    }
+                } catch (a) {
+                    alert("Errore risposta server" + a)
+                }
+            } else 400 == a.status ? alert("Errore 400 richiesta non valida") : alert("Errore di comunicazione con il server")
+    }, a.open("GET", "/setup/wifilist", !0), a.send()
+};
+
+/* Device Edit*/
 
 document.addEventListener('DOMContentLoaded', function(event) {
+
+    /* Evento show su modale di edit/new device */
     $('#device-edit').on('shown.bs.modal', function(e) {
         var action = $(e.relatedTarget).data('action');
         if (action == 'new-device') {
@@ -22,11 +44,13 @@ document.addEventListener('DOMContentLoaded', function(event) {
         }
     });
 
+    /* Evento hide su modale edit/new */
     $('#device-edit').on('hidden.bs.modal', function () {
         $('#frm_edit_dev_name')[0].setCustomValidity('');
         $(this).data('bs.modal', null);
     });
 
+    /* Evento di input su widget dev name */
     $('#frm_edit_dev_name').on('input',  function() {
         var old_name = $('#frm_edit_curr_dev_name').val().trim();
         var new_name = $(this).val().trim();
@@ -40,15 +64,32 @@ document.addEventListener('DOMContentLoaded', function(event) {
             this.setCustomValidity(found ? 'Il nome del dispositivo è già in uso' : '');
         }
     });
-    $('#devices-list a[data-toggle=pill]').on('shown.bs.tab', function (e) {
+    /* Evento show su tab elenco device */
+    $('#devices-list a[data-toggle=pill]').on('shown.bs.tab', show_device_info );
+});
+
+/* Disattiva toolbar */
+var disable_tool_button = function() {
+    $('button[data-action="device-delete"]').prop( 'disabled', false );
+    $('button[data-action="edit-device"]').prop( 'disabled', false );
+}
+
+var enable_tool_button = function() {
+    $('button[data-action="device-delete"]').prop( 'disabled', false );
+    $('button[data-action="edit-device"]').prop( 'disabled', false );
+}
+
+var show_device_info = function (e) {
         var sel_dev = e.target; // activated tab
 
         // l'id del div che inizia per #device_
         var device_div = $(sel_dev).attr('href');
         var dev_input_name = $(device_div).children('input[name=device_name]').eq(0);
         var dev_input_type = $(device_div).children('input[name=device_type]').eq(0);
-        if ( device_name.val() != '' && device_type.val() != '')
+        if ( dev_input_name.val() != '' && dev_input_type.val() != '') {
+            enable_tool_button();
             return;
+        };
         $.ajax({
           dataType: 'json',
           url: '/setup/getDeviceInfo',
@@ -60,13 +101,11 @@ document.addEventListener('DOMContentLoaded', function(event) {
             }
             dev_input_name.val(d.device.name);
             dev_input_type.val(d.device.type);
-            $('button[data-action="device-delete"]').prop( 'disabled', false );
-            $('button[data-action="edit-device"]').prop( 'disabled', false );
+            enable_tool_button();
           },
           error : function() {alert('Errore di comunicazione con il server');}
         });
-    });
-});
+    }
 
 function saveDeviceData() {
 
@@ -107,6 +146,7 @@ function saveDeviceData() {
                 alert(data.message);
             } else {
                 var dev_a = $('#devices-list').find('a[href="#device_' + device_name + '"]');
+                dev_a.on('shown.bs.tab', show_device_info );
                 var dev_pane = $('#device_' + device_name);
                 if (!dev_a.length) {
                     var dev_tab = $('#device-template').children().eq(0).clone();
@@ -130,6 +170,14 @@ function saveDeviceData() {
     });
 }
 
+/* Device Delete */
+document.addEventListener('DOMContentLoaded', function(event) {
+    $('#device-delete').on('shown.bs.modal', function() {
+        $('#device-delete').find('b.device-name').text(
+            $('#devices-list').find('li.active a').attr('href').substring(8)
+        );
+    });
+});
 
 function deleteDevice() {
     var dev_name = $('#device-delete').find('b.device-name').text();
@@ -145,8 +193,7 @@ function deleteDevice() {
         }
         var dev_id = '#device_' + dev_name;
         $('#devices-list').find('a[href="' + dev_id + '"]').parent().remove();
-        $('button[data-action=\"device-delete\"]').prop( 'disabled', false );
-        $('button[data-action=\"edit-device\"]').prop( 'disabled', false );
+        disable_tool_button();
         $(dev_id).remove();
         if ($('#devices-list').find('li').length == 0)
              $('.no-device-alert').removeClass('hidden');
