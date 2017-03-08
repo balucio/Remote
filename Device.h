@@ -7,6 +7,7 @@
 #ifndef Device_h
 #define Device_h
 
+#include "Arduino.h"
 #include "WString.h"
 #include "Key.h"
 
@@ -28,8 +29,8 @@ class Device {
     String getType();
     Key * getKeys();
     
-    void appendKey( String &key_name, int pulse,  long int code );
-    void removeKey( String &key_name );
+    boolean appendKey( String &key_name, int pulse,  long int code );
+    boolean removeKey( String &key_name );
 
   private:
     String dev_name;
@@ -42,5 +43,6 @@ class Device {
 };
 
 #endif
+
 
 

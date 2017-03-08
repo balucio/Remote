@@ -31,12 +31,14 @@ String Device::getName() {  return dev_name; }
 String Device::getType() {  return dev_type; }
 Key * Device::getKeys() { return  first_key; }
 
-void Device::appendKey( String &key_name, int pulse, long int code ) {
+boolean Device::appendKey( String &key_name, int pulse, long int code ) {
 
   if (key_name.length() > Key::MAX_KEY_NAME_LEN)
-    return;
+    return false;
 
   Key * key = new Key( key_name, pulse, code );
+
+  if (!key) return false;
 
   if ( first_key == NULL ) {
     first_key = key;
@@ -45,16 +47,18 @@ void Device::appendKey( String &key_name, int pulse, long int code ) {
     last_key->setNext(key);
     last_key = key;
   }
+
+  return true;
 }
 
-void Device::removeKey( String &key_name ) {
+boolean Device::removeKey( String &key_name ) {
   
   Key * prev_key = this->findPreviousKeyByName( key_name );
 
   if ( prev_key == NULL) {
     
     if ( first_key == NULL || first_key->getName() != key_name ) {
-      return;
+      return false;
     }
       
     prev_key = first_key;
@@ -65,7 +69,7 @@ void Device::removeKey( String &key_name ) {
       last_key = NULL;
     }
 
-    return;
+    return true;
   }
 
   Key * next_key = prev_key->getNext();
@@ -79,6 +83,7 @@ void Device::removeKey( String &key_name ) {
   }
 
   delete next_key;
+  return true;
 }
 
 Key * Device::findPreviousKeyByName(String &key_name) {
@@ -100,5 +105,6 @@ Key * Device::findPreviousKeyByName(String &key_name) {
   return NULL;
   
 }
+
 
 

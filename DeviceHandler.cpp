@@ -6,6 +6,8 @@
 
 #include "DeviceHandler.h"
 
+const String DeviceHandler::DATA_DIR = "/data/";
+
 DeviceHandler::DeviceHandler():
   is_opened(SPIFFS.begin()),
   device(NULL)
@@ -28,7 +30,7 @@ boolean DeviceHandler::setDevice( const String &device_name, const String &devic
 
     if (device->getType() != device_type) {
       device->setType(device_type);
-       return saveDeviceFile( device );
+       return DeviceHandler::saveDeviceFile( device );
     }
     
   } else if (device = new Device(device_name, device_type)) {
@@ -56,11 +58,27 @@ boolean DeviceHandler::setDevice( const String &device_name ) {
   return device != NULL;
 }
 
+boolean DeviceHandler::addDeviceKey( String &kname, int kpulse, int kcode ) {
+
+  if (!device) return false;
+
+  return device->appendKey( kname, kpulse, kcode )
+    && DeviceHandler::saveDeviceFile( device );
+}
+
+boolean DeviceHandler::deleteDeviceKey( String &kname ) {
+
+  if (!device) return false;
+  return device->removeKey( kname )
+    && DeviceHandler::saveDeviceFile( device );
+}
+
+
 Device & DeviceHandler::getDevice() { return *device; }
 
 Device * DeviceHandler::loadDeviceFile( const String &device_name ) {
 
-  String file_name = "/" + device_name;
+  String file_name = DATA_DIR + device_name;
   
   if (!SPIFFS.exists(file_name)) {
     Serial.println("GetDedvice: file " + file_name + " does not exits");
@@ -123,7 +141,9 @@ boolean DeviceHandler::renameDevice( const String &new_name) {
   return false;
 }
 
-boolean DeviceHandler::renameDeviceFile( const String &old_name, const String &new_name) { return SPIFFS.rename("/" + old_name, "/" + new_name); };
+boolean DeviceHandler::renameDeviceFile( const String &old_name, const String &new_name) {
+  return SPIFFS.rename(DATA_DIR + old_name, DATA_DIR + new_name);
+};
 
 boolean DeviceHandler::deleteDevice() {
 
@@ -143,7 +163,7 @@ boolean DeviceHandler::deleteDevice() {
   return r;
 }
 
-boolean DeviceHandler::deleteDeviceFile( const String &device_name ) { return SPIFFS.remove("/" + device_name); }
+boolean DeviceHandler::deleteDeviceFile( const String &device_name ) { return SPIFFS.remove(DATA_DIR + device_name); }
 
 boolean DeviceHandler::saveDevice() {
 
@@ -155,7 +175,7 @@ boolean DeviceHandler::saveDevice() {
 
 boolean DeviceHandler::saveDeviceFile( Device * device ) {
 
-  String fname = "/" + device->getName();
+  String fname = DATA_DIR + device->getName();
   File f = SPIFFS.open(fname, "w");
 
   if (!f) {
@@ -183,7 +203,7 @@ boolean DeviceHandler::saveDeviceFile( Device * device ) {
   return true;
 }
 
-boolean DeviceHandler::existsDeviceFile( const String &device_name ) { return SPIFFS.exists("/" + device_name); }
+boolean DeviceHandler::existsDeviceFile( const String &device_name ) { return SPIFFS.exists(DATA_DIR + device_name); }
 
 String * DeviceHandler::getDevicesName() {
 
@@ -195,7 +215,7 @@ String * DeviceHandler::getDevicesName() {
     
   names = new String[c];
 
-  Dir dir = SPIFFS.openDir("/");
+  Dir dir = SPIFFS.openDir(DATA_DIR);
 
   while (dir.next())
     names[--c] = dir.fileName().substring(1);
@@ -213,7 +233,7 @@ int DeviceHandler::recountDevices(bool force) {
   if (device_num >= 0 && !force)
     return device_num;
 
-  Dir dir = SPIFFS.openDir("/");
+  Dir dir = SPIFFS.openDir(DATA_DIR);
   device_num = 0;
   
   while (dir.next())
@@ -228,27 +248,5 @@ String * DeviceHandler::getDeviceTypes() { return Device::TYPES; }
 String * DeviceHandler::getDeviceTypesDescription() { return Device::TYPES_DESCRIPTION; }
 
 
-boolean DeviceHandler::isValidDeviceName(const String &device_name) {
-  return DeviceHandler::parseAlphaNumString(device_name, Device::MAX_NAME_LENGTH);
-}
-
-boolean DeviceHandler::isValidDeviceType(const String &device_type) {
-
-  for (int i = 0; i < Device::TYPE_NUM; i++) {
-    if (Device::TYPES[i] == device_type)
-      return true;
-  }
-  return false;
-}
-
-boolean DeviceHandler::parseAlphaNumString(const String &s, const int l) {
 
 
-  for(byte i=0; i<s.length(); i++) {
-    if(!isAlphaNumeric(s.charAt(i)))
-      return false;
-  }
-
-  return (s.length() > 0 && s.length() <= l);
-
-}

@@ -16,6 +16,8 @@ class DeviceHandler {
 
     static const char SEP=';';
     static const char EOL='\n';
+    
+    static const String DATA_DIR;
 
     static String *getDevicesName();
     static int getDevicesNum();
@@ -24,15 +26,14 @@ class DeviceHandler {
     static String * getDeviceTypes();
     static String * getDeviceTypesDescription();
 
-    static boolean isValidDeviceName(const String &device_name);
-    static boolean isValidDeviceType(const String &device_type);
-
     DeviceHandler();
     ~DeviceHandler();
 
     boolean setDevice( const String &device_name, const String &device_type );
     boolean setDevice( const String &device_name );
     boolean renameDevice( const String &new_name); 
+    boolean addDeviceKey( String &kname, int kpulse, int kcode );
+    boolean deleteDeviceKey( String &kname);
     boolean deleteDevice();
     boolean saveDevice();
     Device & getDevice();
@@ -49,9 +50,9 @@ class DeviceHandler {
 
     static int recountDevices(bool force);
 
-    static boolean parseAlphaNumString(const String &s, const int l);
 };
 
 #endif
+
 
 
