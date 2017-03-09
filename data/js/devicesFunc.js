@@ -137,7 +137,6 @@ function deleteDevice() {
 
 }
 
-
 function detectKeyData() {
     $.ajax({
         method: 'POST',
@@ -162,7 +161,6 @@ function setupKeyRowTemplate(dev_pane, kdata) {
     tpl.find('td:eq(1)').text(kdata.device_key_name);
     tpl.find('td:eq(2)').text(kdata.device_key_pulse);
     tpl.find('td:eq(3)').text(kdata.device_key_code);
-    tpl.find('td:eq(0) button').click(deleteDeviceKey);
     return tpl;
 }
 
