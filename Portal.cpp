@@ -38,6 +38,8 @@ boolean Portal::setup() {
   server->on("/", std::bind(&Portal::handleRootPage, this));
   server->on("/setup/wifi", std::bind(&Portal::handleSetupWifi, this));
   server->on("/setup/wifilist", std::bind(&Portal::handleWifiList, this));
+  server->on("/setup/savewifi", std::bind(&Portal::handleSaveWifi, this));
+  
   if (!ap_mode) {
     server->serveStatic("/js", SPIFFS, "/js");
     server->on("/setup/devices", std::bind(&Portal::handleSetupDevices, this));
@@ -46,7 +48,6 @@ boolean Portal::setup() {
     server->on("/setup/deleteDevice", std::bind(&Portal::handleDeleteDevice, this));
     server->on("/setup/editDeviceKey", std::bind(&Portal::handleEditDeviceKey, this));
     server->on("/setup/deleteDeviceKey", std::bind(&Portal::handleDeleteDeviceKey, this));
-    server->on("/setup/savewifi", std::bind(&Portal::handleSaveWifi, this));
   }
   server->onNotFound (std::bind(&Portal::handleNotFound, this));
   server->begin(); // Web server start
