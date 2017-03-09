@@ -216,9 +216,10 @@ String * DeviceHandler::getDevicesName() {
   names = new String[c];
 
   Dir dir = SPIFFS.openDir(DATA_DIR);
+  int l = DATA_DIR.length();
 
   while (dir.next())
-    names[--c] = dir.fileName().substring(1);
+    names[--c] = dir.fileName().substring(l);
 
   return names;
 
