@@ -4,6 +4,12 @@
   Released into the public domain.
 */
 
+// GPIO16 -> D0 ->
+// GPIO05 -> D1 ->
+// GPIO04 -> D2 ->
+// GPIO00 -> D3 -> Ricevitore
+// GPIO02 -> D4 -> Trasmettitore
+
 #include "DeviceHandler.h"
 
 const String DeviceHandler::DATA_DIR = "/data/";
@@ -28,15 +34,13 @@ boolean DeviceHandler::setDevice( const String &device_name, const String &devic
 
   if (device = loadDeviceFile( device_name )) {
 
-    if (device->getType() != device_type) {
-      device->setType(device_type);
-       return DeviceHandler::saveDeviceFile( device );
-    }
+    return DeviceHandler::saveDeviceFile( device );
     
   } else if (device = new Device(device_name, device_type)) {
 
     if (!DeviceHandler::saveDeviceFile( device )) {
       delete device;
+      device = NULL;
     } else {
       // Invalidate device counter
       DeviceHandler::recountDevices(true);
@@ -58,11 +62,11 @@ boolean DeviceHandler::setDevice( const String &device_name ) {
   return device != NULL;
 }
 
-boolean DeviceHandler::addDeviceKey( String &kname, int kpulse, int kcode ) {
+boolean DeviceHandler::addDeviceKey( String * attr ) {
 
   if (!device) return false;
-
-  return device->appendKey( kname, kpulse, kcode )
+  Serial.println ("Aggiungo valori tasto");
+  return device->addKey( attr )
     && DeviceHandler::saveDeviceFile( device );
 }
 
@@ -81,7 +85,7 @@ Device * DeviceHandler::loadDeviceFile( const String &device_name ) {
   String file_name = DATA_DIR + device_name;
   
   if (!SPIFFS.exists(file_name)) {
-    Serial.println("GetDedvice: file " + file_name + " does not exits");
+    Serial.println("GetDevice: file " + file_name + " does not exits");
     return NULL;
   }
 
@@ -93,40 +97,72 @@ Device * DeviceHandler::loadDeviceFile( const String &device_name ) {
   }
 
   // First line is device type
-  String line = f.readStringUntil('\n');
-
-  if (!line) {
+  String line = f.readStringUntil(DeviceHandler::EOL);
+  line.remove( line.length() - 1);  
+  if (line == "") {
     Serial.println("Impossibile leggere il tipo di dispositivo");
     return NULL;
   }
 
-  line.remove( line.length() - 1);
   Device * d = new Device( device_name, line );
 
-  int sep1, sep2;
-  String key_name;
-  int key_pulse;
-  long int key_code;
+  if (!d)
+    return NULL;
+
+  int num = d->getKeysPropertyNum();
+
+  String * k_attr = new String[num];
 
   while ( f.available() ) {
+    
     line = f.readStringUntil(DeviceHandler::EOL);
-    sep1 = line.indexOf(DeviceHandler::SEP);
-    if (sep1 == -1)
-      continue;
-    key_name = line.substring(0, sep1 - 1);
-    sep2 = line.indexOf(DeviceHandler::SEP, sep1 + 1);
-    if (sep2 == -1)
-      continue;
-    key_pulse = line.substring(sep1 + 1, sep2).toInt();
-    key_code = line.substring(sep2 + 1).toInt();
 
-    d->appendKey( key_name, key_pulse, key_code );
+    if (line.length() == 1)
+      continue;
+
+    line.setCharAt(line.length() - 1, ';');
+
+    int s = -1,  e = 0, i = 0;
+
+    while ( i < num ) {
+
+      e = line.indexOf(DeviceHandler::SEP, ++s);
+
+      if ( e == -1 )
+        break;
+       
+      k_attr[i++] = line.substring(s, e - 1);
+      s = e;
+    }
+
+    if (i == num)
+      d->addKey(k_attr);
   }
 
+  delete[] k_attr;
   f.close();
   return d;
 }
+/*
+boolean DeviceHandler::acquireData() {
+  
+  if (!device) return false;
 
+  RCSwitch sw = RCSwitch();
+
+  // Receiver on interrupt 0 => that is pin #2
+  sw.enableReceive(0);
+
+  int attempt = 3;
+  for (int i=0; i < attempt; i++) {
+    if (sw.available()) {
+    output(sw.getReceivedValue(), sw.getReceivedBitlength(), sw.getReceivedDelay(), sw.getReceivedRawdata(),sw.getReceivedProtocol());
+    sw.resetAvailable();
+  }
+    
+  }
+}
+*/
 boolean DeviceHandler::renameDevice( const String &new_name) {
 
   if (!device) return false;
@@ -186,15 +222,16 @@ boolean DeviceHandler::saveDeviceFile( Device * device ) {
   // Salvo il tipo di dispositivo
   f.println( device->getType());
 
+  int attr_num = device->getKeysPropertyNum();
   Key * k = device->getKeys();
 
-  String k_name;
-
   while (k) {
-    k_name = k->getName().substring(0, Key::MAX_KEY_NAME_LEN);
-    f.print(k_name + DeviceHandler::SEP);
-    f.print(String( k->getPulse() ) + DeviceHandler::SEP);
-    f.print(String( k->getCode() ) + DeviceHandler::EOL);
+
+    for (int i = 0; i < attr_num - 1; i++) {
+        String attr = k->getPropertyById(i);
+        f.print(attr + DeviceHandler::SEP);
+    }
+    f.print(k->getPropertyById(attr_num - 1 ) + DeviceHandler::EOL);
     k = k->getNext();
   }
 

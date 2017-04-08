@@ -17,7 +17,7 @@ class Validation {
     static boolean isValidDeviceName(const String &device_name);
     static boolean isValidDeviceType(const String &device_type);
     static boolean isValidDeviceKeyName(const String &device_key_name);
-    static boolean isValidDeviceKeyPulse(const String &device_key_pulse);
+    static boolean isValidDeviceKeyLen(const String &device_key_len);
     static boolean isValidDeviceKeyCode(const String &device_key_code);
 
   private:

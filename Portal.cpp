@@ -215,7 +215,7 @@ void Portal::handleDeleteDevice() {
 void Portal::handleGetDeviceInfo() {
   
   String device_name="", msg="";
-  String dev_data="\"name\":\"\",\"type\":\"\", \"key\":[]";
+  String dev_data;
   bool error = true;
 
   if(!server->hasArg("device_name")) {
@@ -234,6 +234,7 @@ void Portal::handleGetDeviceInfo() {
 
       dev_data = getDeviceData(dh.getDevice());
       error = false;
+
     } else {
 
       msg = "Errore: impossibile selezionare il dispositivo";
@@ -252,67 +253,73 @@ void Portal::handleGetDeviceInfo() {
 
 void Portal::handleEditDeviceKey() {
 
-    String
-      msg = "",
-      device_name = "",
-      device_key_name = "",
-      device_key_pulse = "",
-      device_key_code ="";
+  String
+    msg = "",
+    device_name = "",
+    device_key = "{ "
+  ;
 
-    bool error = true;
+  bool error = true;
 
-    if(!server->hasArg("device_name")
-      || !server->hasArg("device_key_name")
-      || !server->hasArg("device_key_pulse")
-      || !server->hasArg("device_key_code")
-    ) {
+  if(!server->hasArg("device_name")) {
+      
+    msg = "Errore: nome dispositivo non specificato";
 
-      msg = "Errore: paramentri mancanti";
+  } else {
+    
+    device_name = server->arg("device_name");
 
-    } else {
+    if (!Validation::isValidDeviceName(device_name)) {
 
-      device_name = server->arg("device_name");
-      device_key_name = server->arg("device_key_name");
-      device_key_pulse = server->arg("device_key_pulse");
-      device_key_code = server->arg("device_key_code");
+      msg = "Errore: nome dispositivo non valido";
 
-      if (!Validation::isValidDeviceName(device_name)) {
+    } else if (dh.setDevice(device_name)) {
 
-        msg = "Errore: nome dispositivo non valido";
+      Device d = dh.getDevice();
+      int num = d.getKeysPropertyNum();
+      String * names = d.getKeysPropertyNames();
+      String values[num];
+      error = false;
 
-      } else if (!Validation::isValidDeviceKeyName(device_key_name)) {
-
-        msg = "Errore: nome tasto non valido";
-
-      }  else if (!Validation::isValidDeviceKeyPulse(device_key_pulse)) {
-
-        msg = "Errore: valore impulso tasto non valido";
-
-      } else if (!Validation::isValidDeviceKeyCode(device_key_code)) {
-
-        msg = "Errore: valore codice tasto non valido";
-
-      } else if (!dh.setDevice( device_name ))  {
-
-        msg = "Errore: impossibile configurare il dispositivo";  
-        
-
-      } else if (dh.addDeviceKey( device_key_name, device_key_pulse.toInt(), device_key_code.toInt() )) {
-
-        msg = "Tasto aggiunto al dispositivo";
-        error = false;
-
-      } else {
-        
-        msg = "Errore: impossibile salvare la configurazione del dispositivo";
+      for (int i = 0; i < num; i++) {
+        String form_input = "device_key_" + names[i];
+        if(
+          server->hasArg(form_input)
+          && d.isValidPropertyById(i, server->arg(form_input))
+        ) {
+          values[i] = server->arg(form_input);
+          device_key += "\"" + names[i] + "\":\"" + values[i] + "\","; 
+        } else {
+          error = true;
+          msg = "Errore parametro " + names[i] + " non valido";
+          break;
+        }
       }
+
+      delete[] names;
+
+      device_key.setCharAt(device_key.length() - 1, ' ');
+      
+      if (!error) {
+        if (dh.addDeviceKey(values)) {
+          msg = "Tasto aggiunto al dispositivo";
+        } else {
+          msg = "Errore impossibile salvare la configurazione del tasto";
+          error = true;
+        }
+      }
+    } else {
+        msg = "Errore: impossibile configurare il dispositivo";  
     }
+  }
 
-    String json = "{ \"error\" :";
-    json += (error ? String("true") : String("false"));
-    json += String(",\"message\":\"") + msg + "\"}";
+  device_key.setCharAt(device_key.length() - 1, '}');
+  String json = "{ \"error\" :";
+  json += (error ? String("true") : String("false"));
+  json += String(",\"message\":\"") + msg + "\"";
+  json += String(",\"key\":") + device_key + "}";
 
-    server->send( 200, "text/json", json );
+  server->send( 200, "text/json", json );
 }
 
 void Portal::handleDeleteDeviceKey() {
@@ -464,7 +471,6 @@ String Portal::getMessageTpl() {
 
 boolean Portal::redirect() {
 
-
   if ( ap_mode && !ConnectionManager::isIp(server->hostHeader())) {
     Serial.println("Richiesto un hostname redirigo la richiesta verso l'ip locale.");
     this->redirectHeaders(String("http://") + server->client().localIP().toString());
@@ -505,8 +511,8 @@ String Portal::getDevPanel() {
   );
   devpane += prepareModal(
     String("device-key-edit"),
-    String("Configurazione tasto del dispositivo"),
-    FPSTR(HTML_FORM_EDIT_DEVICE_KEY),
+    String("Tasto dispositivo"),
+    "",
     "saveDeviceKey" 
   );
 
@@ -522,6 +528,9 @@ String Portal::getDevPanel() {
   panelbody += FPSTR(HTML_DEV_LI_TPL);
   panelbody += FPSTR(HTML_DEV_PANE_TPL);
   panelbody += "</div>";
+  // Template html for different device type keys
+  panelbody += FPSTR(HTML_DEV_PANE_RF433_TPL);
+  panelbody += FPSTR(HTML_FORM_EDIT_RF433_KEY);
 
   String alert = FPSTR(HTML_FULL_ALERT_TPL);
   alert.replace("{message}", "Nessun dispositivo configurato");
@@ -543,7 +552,6 @@ String Portal::getDevPanel() {
         li += wrk;
         wrk = FPSTR(HTML_DEV_PANE_TPL);
         wrk.replace("{dev_name}", list[i]);
-        wrk.replace("{dev_type}", "");
         pane += wrk;
   }
 
@@ -585,22 +593,39 @@ String Portal::prepareModal(String const &id, String const &title, String const 
   return modal;
 }
 
+String Portal::getDeviceKeyAttrs(Device &d) {
 
-String Portal::getDeviceData(Device &device) {
+  int num = d.getKeysPropertyNum();
+  String * names = d.getKeysPropertyNames();
+  
+  Key * key = d.getKeys();
 
-  String json = "\"name\":\"" + device.getName() + "\",";
-  json += "\"type\":\"" + device.getType() + "\",";
-  json += "\"keys\":[ ";
-  Key * key = device.getKeys();
+  String pairs = "";
 
   while (key) {
-    json += "{\"name\":\"" + key->getName() + "\",";
-    json += String("\"pulse\":\"") + key->getPulse() + "\",";
-    json += String("\"code\":\"") + key->getCode() + "\"},";
+
+    pairs += "{";
+
+    for (int i = 0; i < num; i++) {
+      pairs += String("\"") + names[i] + String("\":");
+      pairs += String("\"") + key->getPropertyById(i) + String("\",");
+    }
+
+    pairs.remove(pairs.length() - 1);
+    pairs += "}";
     key = key->getNext();
   }
-  json.remove(json.length() - 1);
-  json += "]";
+
+  delete[] names;
+  return pairs;
+  
+}
+
+String Portal::getDeviceData(Device &d) {
+
+  String json = "\"name\":\"" + d.getName() + "\",";
+  json += "\"type\":\"" + d.getType() + "\",";
+  json += "\"keys\":[" + getDeviceKeyAttrs(d) + "]";
   return json;
 }
 

@@ -32,11 +32,13 @@ class DeviceHandler {
     boolean setDevice( const String &device_name, const String &device_type );
     boolean setDevice( const String &device_name );
     boolean renameDevice( const String &new_name); 
-    boolean addDeviceKey( String &kname, int kpulse, int kcode );
+    boolean addDeviceKey( String * attr );
     boolean deleteDeviceKey( String &kname);
     boolean deleteDevice();
     boolean saveDevice();
+    boolean learnData();
     Device & getDevice();
+    
 
   private:
     boolean is_opened;

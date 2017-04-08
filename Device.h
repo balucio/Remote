@@ -9,7 +9,7 @@
 
 #include "Arduino.h"
 #include "WString.h"
-#include "Key.h"
+#include "RfKey.h"
 
 class Device {
   
@@ -28,9 +28,13 @@ class Device {
     String getName();
     String getType();
     Key * getKeys();
-    
-    boolean appendKey( String &key_name, int pulse,  long int code );
-    boolean removeKey( String &key_name );
+
+    String * getKeysPropertyNames();
+    int getKeysPropertyNum();
+    boolean isValidPropertyById(int id, const String &val);
+
+    boolean addKey(String * key_data);
+    boolean removeKey(const String &key_name );
 
   private:
     String dev_name;
@@ -38,7 +42,9 @@ class Device {
     Key * first_key = NULL;
     Key * last_key = NULL;
 
-    Key * findPreviousKeyByName( String &key_name );
+    Key * findPreviousKeyByName(const String &key_name );
+
+    String * getProperties(const String names[], int len);
 
 };
 

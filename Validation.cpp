@@ -23,9 +23,9 @@ boolean Validation::isValidDeviceType(const String &device_type) {
   return false;
 }
 
-boolean Validation::isValidDeviceKeyPulse(const String &device_key_pulse) {
+boolean Validation::isValidDeviceKeyLen(const String &device_key_len) {
 
-  return Validation::parseNumericString(device_key_pulse, 9);
+  return Validation::parseNumericString(device_key_len, 9);
   
 }
 

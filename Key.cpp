@@ -1,5 +1,5 @@
 /*
-  DeviceKey.cpp - Code foreach device Key
+  DeviceKey.cpp - base data foreach key of device
   Saul bertuccio 7 feb 2017
   Released into the public domain.
 */
@@ -8,17 +8,18 @@
 
 const int Key::MAX_KEY_NAME_LEN = 10;
 
-Key::Key(String key_name, int pulse, long int code)
-  : key_name(key_name),
-    pulse(pulse),
-    code(code)
+Key::Key(const String & key_name)
+  : key_name(key_name)
 {}
 
+Key::~Key(){};
+
+
 String Key::getName(){ return key_name; }
-int Key::getPulse() { return pulse; }
-long int Key::getCode() { return code; }
 Key * Key::getNext() { return next; }
- 
+
 void Key::setNext(Key * next) { this->next = next; }
 
+String Key::getPropertyById(int id) { return String(""); }
+boolean Key::isValidPropertyById(int id, const String &val) { return false; };
 
