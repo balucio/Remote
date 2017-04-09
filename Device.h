@@ -48,6 +48,7 @@ class Device {
     boolean addKey(String * key_data);
     boolean removeKey(const String &key_name );
     Key * acquireKeyData();
+    boolean sendKeyData(const String & key_name);
 
 
   private:
@@ -62,6 +63,7 @@ class Device {
 
 
     static Key * acquireRfKeyData();
+    static void sendRfKeyData(Key *key);
 
 };
 

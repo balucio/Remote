@@ -99,6 +99,32 @@ boolean Device::addKey(String * key_data) {
   return true;
 }
 
+boolean Device::sendKeyData(const String & key_name) {
+
+  Serial.println(key_name);
+  Key * k = findPreviousKeyByName(key_name);
+
+  if ( k == NULL) {
+    if (first_key != NULL && first_key->getName() == key_name) {
+      k = first_key;
+    } else {
+      return false;
+    }
+  } else {
+    k = k->getNext();
+  }
+
+  if (dev_type == TYPES[0])
+    return false;
+    
+  // RF433
+  if (dev_type == TYPES[1]) {
+    Device::sendRfKeyData(k);
+  }
+
+  return true;  
+}
+
 Key * Device::acquireKeyData() {
 
   // IRDA
@@ -179,6 +205,14 @@ String * Device::getProperties(const String names[], int len) {
   }
 
   return props;
+}
+
+void Device::sendRfKeyData(Key *key) {
+  RCSwitch sw = RCSwitch();
+  RfKey *k = static_cast<RfKey *>(key);
+  sw.enableTransmit(Device::RF_TX_PIN);
+  sw.send(k->getCode(), k->getLength());
+  sw.disableTransmit();
 }
 
 Key * Device::acquireRfKeyData() {

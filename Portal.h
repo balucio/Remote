@@ -153,6 +153,7 @@ class Portal {
 
     void setWifi();
 
+    void handleSendKey();
     void handleRootPage();
     void handleNotFound();
     void handleSaveWifi();

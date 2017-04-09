@@ -39,6 +39,7 @@ boolean Portal::setup() {
   server->on("/setup/wifi", std::bind(&Portal::handleSetupWifi, this));
   server->on("/setup/wifilist", std::bind(&Portal::handleWifiList, this));
   server->on("/setup/savewifi", std::bind(&Portal::handleSaveWifi, this));
+  server->on("/sendKey", std::bind(&Portal::handleSendKey, this));
   
   if (!ap_mode) {
     server->serveStatic("/js", SPIFFS, "/js");
@@ -115,6 +116,45 @@ void Portal::handleSaveWifi() {
   message.replace("{message}", msg);
   redirectHeaders("/setup");
 
+}
+
+
+void Portal::handleSendKey() {
+  String device_name="", key_name="", msg="";
+  boolean error = true;
+  
+  if(server->hasArg("device_name") && server->hasArg("key_name")) {
+      device_name = server->arg("device_name");
+      key_name = server->arg("key_name");
+
+      if (
+          Validation::isValidDeviceName(device_name)
+          &&Validation::isValidDeviceName(key_name)
+      ) {
+        if (dh.setDevice( device_name ) ) {
+          Device & d = dh.getDevice();
+          if (d.sendKeyData(key_name)) {
+            msg="Invio tasto riuscito";
+            error = false;
+          } else {
+            msg="Errore: impossibile inviare tasto";
+          }
+         
+        } else {
+          msg="Errore: impossibile selezionare dispositivo";
+        }
+      } else {
+        msg = "Errore: parametri non validi";
+      }
+  } else {
+    msg = "Errore: parametri assenti";
+  }
+
+  String json = "{ \"error\" :";
+  json += (error ? String("true") : String("false"));
+  json += String(",\"message\":\"") + msg + "\"}";
+
+  server->send( 200, "text/json", json );
 }
 
 void Portal::handleEditDevice() {
