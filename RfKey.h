@@ -7,6 +7,7 @@
 #ifndef RfKey_h
 #define RfKey_h
 
+#include "RCSwitch.h"
 #include "Key.h"
 #include "Validation.h"
 
@@ -17,12 +18,12 @@ class RfKey: public Key {
     static const String props_names[];
     static const IsValidFnc validations[];
 
-
     RfKey(const String & key_name, int len, long int code);
 
     long int getCode();
     int getLength();
     String getPropertyById(int id);
+    String getPropertyNameById(int id);
 
   protected:
     long int code;
@@ -30,6 +31,7 @@ class RfKey: public Key {
 };
 
 #endif
+
 
 
 

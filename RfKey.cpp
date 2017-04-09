@@ -36,3 +36,15 @@ String RfKey::getPropertyById(int id) {
     default: return String("");
   }
 }
+
+
+String RfKey::getPropertyNameById(int id) {
+
+  if (id < 0 || id >= RfKey::props_num)
+    return String("");
+
+  return RfKey::props_names[id];
+
+}
+
+

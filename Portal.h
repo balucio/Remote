@@ -61,7 +61,7 @@ const char HTML_MODAL_TPL[] PROGMEM = "<div class=\"modal fade\" id=\"{id}\" tab
 // Form device edit
 const char HTML_FORM_EDIT_DEVICE[] PROGMEM = "<form id=\"edit-device-form\" class=\"form-horizontal\" role=\"form\" action=\"javascript:0\"><div class=\"form-group\"><label class=\"col-sm-2 control-label\">Nome</label><div class=\"col-sm-10\"><input type=\"text\" class=\"form-control\" placeholder=\"Nome dispositivo\" name=\"device_name\" pattern=\"^[\\w+]{1,16}$\" title=\"Inserire un nome valido, max 16 caratteri\" required/></div></div><div class=\"form-group\"><label class=\"col-sm-2 control-label\">Tipo</label><div class=\"col-sm-10\"><select name=\"device_type\" class=\"form-control\" required>{device_types}</select></div></div><input type=\"hidden\" name=\"current_device_name\"/></form>";
 // From device key edit
-const char HTML_FORM_EDIT_RF433_KEY[] PROGMEM = "<form class=\"hidden form-horizontal\" id=\"edit-rf433-key-form\" action=\"javascript:0\"><div class=\"form-group\"><label class=\"col-sm-4 control-label\">Tasto</label><div class=\"col-sm-8\"><input type=\"text\" class=\"form-control\" placeholder=\"Nome tasto\" name=\"device_key_name\" pattern=\"^[\\w+]{1,10}$\" title=\"Inserire un nome di max. 10 caratteri.\" required/></div></div><div class=\"form-group\"><label class=\"col-sm-4 control-label\">Dim. Codice</label><div class=\"col-sm-6\"><input type=\"number\" class=\"form-control\" name=\"device_key_length\" pattern=\"^[0-9]+{1,10}$\" title=\"Inserire un numero intero.\" required/></div><div class=\"col-sm-2\"><button type=\"button\" onclick=\"return detectKeyData()\" class=\"btn btn-success\" title=\"Rileva automaticamente\"><span class=\"glyphicon glyphicon-refresh\"></span></button></div></div><div class=\"form-group\"><label class=\"col-sm-4 control-label\">Codice</label><div class=\"col-sm-6\"><input type=\"number\" class=\"form-control\" name=\"device_key_code\" pattern=\"^[0-9]+{1,10}$\" title=\"Inserire un numero intero.\" required/></div></div><input type=\"hidden\" name=\"device_name\"/><input type=\"hidden\" name=\"device_type\"/></form>";
+const char HTML_FORM_EDIT_RF433_KEY[] PROGMEM = "<form class=\"hidden form-horizontal\" id=\"edit-rf433-key-form\" action=\"javascript:0\"><div class=\"form-group\"><label class=\"col-sm-4 control-label\">Tasto</label><div class=\"col-sm-8\"><input type=\"text\" class=\"form-control\" placeholder=\"Nome tasto\" name=\"device_key_name\" pattern=\"^[\\w+]{1,10}$\" title=\"Inserire un nome di max. 10 caratteri.\" required/></div></div><div class=\"form-group\"><label class=\"col-sm-4 control-label\">Dim. Codice</label><div class=\"col-sm-6\"><input type=\"number\" class=\"form-control\" name=\"device_key_length\" pattern=\"^[0-9]+{1,10}$\" title=\"Inserire un numero intero.\" required/></div><div class=\"col-sm-2\"><button type=\"button\" onclick=\"return detectKeyData(this)\" class=\"btn btn-success\" title=\"Rileva automaticamente\"><span class=\"glyphicon glyphicon-refresh\"></span></button></div></div><div class=\"form-group\"><label class=\"col-sm-4 control-label\">Codice</label><div class=\"col-sm-6\"><input type=\"number\" class=\"form-control\" name=\"device_key_code\" pattern=\"^[0-9]+{1,10}$\" title=\"Inserire un numero intero.\" required/></div></div><input type=\"hidden\" name=\"device_name\"/><input type=\"hidden\" name=\"device_type\"/></form>";
 // HTML Spare
 const char HTML_OPTION_TPL[] PROGMEM = "<option value=\"{value}\">{name}</option>";
 
@@ -155,13 +155,14 @@ class Portal {
 
     void handleRootPage();
     void handleNotFound();
-    void handleSetupWifi();
-    void handleSetupDevices();
     void handleSaveWifi();
+    void handleSetupWifi();
     void handleEditDevice();
-    void handleGetDeviceInfo();
+    void handleSetupDevices();
     void handleDeleteDevice();
+    void handleGetDeviceInfo();
     void handleEditDeviceKey();
+    void handleAcquireKeyData();
     void handleDeleteDeviceKey();
     void redirectHeaders(String where);
 
@@ -176,8 +177,12 @@ class Portal {
     String getDeviceData(Device &d);
     String getDeviceKeyAttrs(Device &d);
     String getMainMenu();
+
+    static String keyAttrToJson(int num, Key * key);
+
 };
 
 #endif
+
 
 

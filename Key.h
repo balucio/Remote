@@ -27,7 +27,7 @@ class Key {
     void setNext(Key * next);
 
     virtual String getPropertyById(int id);
-    virtual boolean isValidPropertyById(int id, const String &val);
+    virtual String getPropertyNameById(int id);
 
   private:
     String key_name;
@@ -35,6 +35,7 @@ class Key {
 };
 
 #endif
+
 
 
 

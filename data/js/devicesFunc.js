@@ -154,23 +154,22 @@ var deleteDevice = function() {
 
 }
 
-var detectKeyData = function() {
-    var form = $(this).closest('form');
+var detectKeyData = function(e) {
+    var form = $(e).closest('form');
     $.ajax({
         method: 'POST',
-        url : '/detectKeyValue',
-        data : { type : form.find('input[name=device_type]').val().trim() },
+        url : '/setup/acquireKeyData',
+        data : { device_name : form.find('input[name=device_name]').val().trim() },
         dataType : 'json',
         error : function() {alert('Errore di comunicazione con il server');},
         success : function(data) {
             if (data.error == true){
                 alert(data.message);
             } else {
-                delete data.error, data.message;
-                for (var k in data) {
-                    if (data.hasOwnProperty(k)) {
+                for (var k in data.key_data) {
+                    if (data.key_data.hasOwnProperty(k) && data.key_data[k] != 'DUMMY') {
                         var input_name = 'input[name=device_key_' + k + ']';
-                        form.find(input_name).val(data[k]);
+                        form.find(input_name).val(data.key_data[k]);
                     }
                 }
             }

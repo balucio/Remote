@@ -4,12 +4,6 @@
   Released into the public domain.
 */
 
-// GPIO16 -> D0 ->
-// GPIO05 -> D1 ->
-// GPIO04 -> D2 ->
-// GPIO00 -> D3 -> Ricevitore
-// GPIO02 -> D4 -> Trasmettitore
-
 #include "DeviceHandler.h"
 
 const String DeviceHandler::DATA_DIR = "/data/";
@@ -98,16 +92,20 @@ Device * DeviceHandler::loadDeviceFile( const String &device_name ) {
 
   // First line is device type
   String line = f.readStringUntil(DeviceHandler::EOL);
+
   line.remove( line.length() - 1);  
   if (line == "") {
+    f.close();
     Serial.println("Impossibile leggere il tipo di dispositivo");
     return NULL;
   }
 
   Device * d = new Device( device_name, line );
 
-  if (!d)
+  if (!d) {
+    f.close();
     return NULL;
+  }
 
   int num = d->getKeysPropertyNum();
 
@@ -131,7 +129,7 @@ Device * DeviceHandler::loadDeviceFile( const String &device_name ) {
       if ( e == -1 )
         break;
        
-      k_attr[i++] = line.substring(s, e - 1);
+      k_attr[i++] = line.substring(s, e);
       s = e;
     }
 
@@ -143,26 +141,7 @@ Device * DeviceHandler::loadDeviceFile( const String &device_name ) {
   f.close();
   return d;
 }
-/*
-boolean DeviceHandler::acquireData() {
-  
-  if (!device) return false;
 
-  RCSwitch sw = RCSwitch();
-
-  // Receiver on interrupt 0 => that is pin #2
-  sw.enableReceive(0);
-
-  int attempt = 3;
-  for (int i=0; i < attempt; i++) {
-    if (sw.available()) {
-    output(sw.getReceivedValue(), sw.getReceivedBitlength(), sw.getReceivedDelay(), sw.getReceivedRawdata(),sw.getReceivedProtocol());
-    sw.resetAvailable();
-  }
-    
-  }
-}
-*/
 boolean DeviceHandler::renameDevice( const String &new_name) {
 
   if (!device) return false;

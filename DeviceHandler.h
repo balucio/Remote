@@ -36,7 +36,6 @@ class DeviceHandler {
     boolean deleteDeviceKey( String &kname);
     boolean deleteDevice();
     boolean saveDevice();
-    boolean learnData();
     Device & getDevice();
     
 
@@ -55,6 +54,7 @@ class DeviceHandler {
 };
 
 #endif
+
 
 
 

@@ -47,6 +47,7 @@ boolean Portal::setup() {
     server->on("/setup/getDeviceInfo", std::bind(&Portal::handleGetDeviceInfo, this));
     server->on("/setup/deleteDevice", std::bind(&Portal::handleDeleteDevice, this));
     server->on("/setup/editDeviceKey", std::bind(&Portal::handleEditDeviceKey, this));
+    server->on("/setup/acquireKeyData", std::bind(&Portal::handleAcquireKeyData, this));
     server->on("/setup/deleteDeviceKey", std::bind(&Portal::handleDeleteDeviceKey, this));
   }
   server->onNotFound (std::bind(&Portal::handleNotFound, this));
@@ -275,7 +276,7 @@ void Portal::handleEditDeviceKey() {
 
     } else if (dh.setDevice(device_name)) {
 
-      Device d = dh.getDevice();
+      Device & d = dh.getDevice();
       int num = d.getKeysPropertyNum();
       String * names = d.getKeysPropertyNames();
       String values[num];
@@ -420,6 +421,46 @@ void Portal::handleSetupDevices() {
     page.replace("{onready}", FPSTR(JAVASCRIPT_DEVICE_ONLOAD));
     page.replace("{script}", FPSTR(JAVASCRIPT_DEVICE_FUNCTIONS));
     server->send(200, "text/html", page);
+}
+
+void Portal::handleAcquireKeyData() {
+
+
+  String device_name = "", msg = "", kjattr = "{}";
+  bool error = true;
+
+  if(!server->hasArg("device_name")) {
+      
+    msg = "Errore: nome dispositivo non specificato";
+
+  } else {
+
+    device_name = server->arg("device_name");
+
+    if (!Validation::isValidDeviceName(device_name)) {
+
+      msg = "Errore: nome dispositivo non valido";
+
+    } else if (dh.setDevice(device_name)) {
+
+      Device & d = dh.getDevice();
+      int num = d.getKeysPropertyNum();
+      Key * key = NULL;
+      error = false;
+      if (key = d.acquireKeyData()) {
+        kjattr = Portal::keyAttrToJson(num, key);
+        delete key;
+      }
+    } else {
+      msg = "Errore: impossibile configurare il dispositivo";
+    }
+  }
+  String json = "{ \"error\" :";
+  json += (error ? String("true") : String("false"));
+  json += String(",\"message\":\"") + msg + "\",";
+  json += "\"key_data\":" + kjattr + "}";
+
+  server->send( 200, "text/json", json );
 }
 
 void Portal::handleNotFound() {
@@ -596,27 +637,21 @@ String Portal::prepareModal(String const &id, String const &title, String const 
 String Portal::getDeviceKeyAttrs(Device &d) {
 
   int num = d.getKeysPropertyNum();
-  String * names = d.getKeysPropertyNames();
-  
   Key * key = d.getKeys();
 
-  String pairs = "";
+  
+  if (!key)
+    return "";
+
+  String pairs = " ";
 
   while (key) {
 
-    pairs += "{";
-
-    for (int i = 0; i < num; i++) {
-      pairs += String("\"") + names[i] + String("\":");
-      pairs += String("\"") + key->getPropertyById(i) + String("\",");
-    }
-
-    pairs.remove(pairs.length() - 1);
-    pairs += "}";
+    pairs += Portal::keyAttrToJson(num, key);
+    pairs += ",";
     key = key->getNext();
   }
-
-  delete[] names;
+  pairs.setCharAt(pairs.length() - 1, ' ');
   return pairs;
   
 }
@@ -639,4 +674,19 @@ String Portal::getMainMenu() {
   tpl.replace("{menu}", menu);
   return tpl;
 }
+
+String Portal::keyAttrToJson(int num, Key * key) {
+
+    String jattrs = "{";
+
+    for (int i = 0; i < num; i++) {
+      jattrs += String("\"") + key->getPropertyNameById(i) + String("\":");
+      jattrs += String("\"") + key->getPropertyById(i) + String("\",");
+    }
+
+    jattrs.remove(jattrs.length() - 1);
+    jattrs += "}";
+    return jattrs;
+}
+
 

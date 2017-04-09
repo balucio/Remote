@@ -96,13 +96,24 @@ boolean Device::addKey(String * key_data) {
     last_key->setNext(key);
     last_key = key;
   }
-
-Serial.println("Nome tasto " + key_data[0]);
-Serial.println("Lunghezza " + key_data[1]);
-Serial.println("codice " + key_data[2]);
-
   return true;
 }
+
+Key * Device::acquireKeyData() {
+
+  // IRDA
+  Key * k = NULL;
+  
+  if (dev_type == TYPES[0])
+    k = NULL;
+    
+  // RF433
+  if (dev_type == TYPES[1])
+    k = Device::acquireRfKeyData();
+
+  return k;
+}
+
 
 boolean Device::removeKey(const String &key_name ) {
   
@@ -159,7 +170,6 @@ Key * Device::findPreviousKeyByName(const String &key_name) {
   
 }
 
-
 String * Device::getProperties(const String names[], int len) {
 
     String * props = new String[len];
@@ -169,6 +179,26 @@ String * Device::getProperties(const String names[], int len) {
   }
 
   return props;
+}
+
+Key * Device::acquireRfKeyData() {
+
+  RCSwitch sw = RCSwitch();
+  RfKey * rf = NULL;
+  sw.enableReceive(Device::RF_RX_PIN);
+
+  int attempt = 3;
+  for (int i=0; i < attempt; i++) {
+    if (rf)
+      break;
+    delay(500);
+    if (sw.available()) {
+      rf = new RfKey("DUMMY", sw.getReceivedBitlength(), sw.getReceivedValue());
+      sw.resetAvailable();
+    }
+  }
+  sw.disableReceive();
+  return rf;
 }
 
 

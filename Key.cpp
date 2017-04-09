@@ -21,5 +21,6 @@ Key * Key::getNext() { return next; }
 void Key::setNext(Key * next) { this->next = next; }
 
 String Key::getPropertyById(int id) { return String(""); }
-boolean Key::isValidPropertyById(int id, const String &val) { return false; };
+String Key::getPropertyNameById(int id) { return String(""); }
+
 
