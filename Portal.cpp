@@ -45,8 +45,9 @@ boolean Portal::setup() {
     server->serveStatic("/js", SPIFFS, "/js");
     server->on("/setup/devices", std::bind(&Portal::handleSetupDevices, this));
     server->on("/setup/editDevice", std::bind(&Portal::handleEditDevice, this));
-    server->on("/setup/getDeviceInfo", std::bind(&Portal::handleGetDeviceInfo, this));
+    server->on("/setup/getKeyPanel", std::bind(&Portal::handleGetKeyPanel, this));    
     server->on("/setup/deleteDevice", std::bind(&Portal::handleDeleteDevice, this));
+    server->on("/setup/getDeviceInfo", std::bind(&Portal::handleGetDeviceInfo, this));
     server->on("/setup/editDeviceKey", std::bind(&Portal::handleEditDeviceKey, this));
     server->on("/setup/acquireKeyData", std::bind(&Portal::handleAcquireKeyData, this));
     server->on("/setup/deleteDeviceKey", std::bind(&Portal::handleDeleteDeviceKey, this));
@@ -117,7 +118,6 @@ void Portal::handleSaveWifi() {
   redirectHeaders("/setup");
 
 }
-
 
 void Portal::handleSendKey() {
   String device_name="", key_name="", msg="";
@@ -291,6 +291,36 @@ void Portal::handleGetDeviceInfo() {
   server->send( 200, "text/json", json );
 }
 
+void Portal::handleGetKeyPanel() {
+
+    String html_tpl;
+
+    if(server->hasArg("device_type") && server->hasArg("template_type")) {
+ 
+      String device_type = server->arg("device_type");
+      String template_type = server->arg("template_type");
+      device_type.toUpperCase();
+      template_type.toUpperCase();
+
+      // IRDA
+      if (device_type == Device::TYPES[0]) {
+
+        if (template_type == "DEV_PANE")
+          html_tpl = FPSTR(HTML_DEV_PANE_IRDA_TPL);
+        else if ( template_type == "FORM_EDIT" )
+          html_tpl = FPSTR(HTML_FORM_EDIT_IRDA_KEY);
+      // RF433
+      } else if (device_type == Device::TYPES[1]) {
+          
+        if (template_type == "DEV_PANE")
+          html_tpl = FPSTR(HTML_DEV_PANE_RF433_TPL);
+        else if ( template_type == "FORM_EDIT" )
+          html_tpl = FPSTR(HTML_FORM_EDIT_RF433_KEY);
+      }
+    }
+
+    server->send(200, "text/html", html_tpl);
+}
 
 void Portal::handleEditDeviceKey() {
 
@@ -609,9 +639,6 @@ String Portal::getDevPanel() {
   panelbody += FPSTR(HTML_DEV_LI_TPL);
   panelbody += FPSTR(HTML_DEV_PANE_TPL);
   panelbody += "</div>";
-  // Template html for different device type keys
-  panelbody += FPSTR(HTML_DEV_PANE_RF433_TPL);
-  panelbody += FPSTR(HTML_FORM_EDIT_RF433_KEY);
 
   String alert = FPSTR(HTML_FULL_ALERT_TPL);
   alert.replace("{message}", "Nessun dispositivo configurato");

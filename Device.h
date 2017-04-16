@@ -10,12 +10,13 @@
 #include "Arduino.h"
 #include "WString.h"
 #include "RfKey.h"
+#include "IrKey.h"
 
 // GPIO16 -> D0 ->
 // GPIO05 -> D1 -> Pin Ricevitore RF433
 // GPIO04 -> D2 -> Pin Trasmettitore RF433
-// GPIO00 -> D3 -> 
-// GPIO02 -> D4 -> 
+// GPIO   -> D5 -> RXD Riceve da IR-TXD 
+// GPIO   -> D6 -> TXD Trasmette su IR-RXD
 
 
 class Device {
@@ -30,7 +31,9 @@ class Device {
 
     static const int RF_RX_PIN = D2;
     static const int RF_TX_PIN =  D1;
-
+    
+    static const int IR_RX_PIN = D5;
+    static const int IR_TX_PIN = D6;
  
     Device(const String &dev_name, const String &dev_type);
     ~Device();
@@ -63,7 +66,11 @@ class Device {
 
 
     static Key * acquireRfKeyData();
+    static Key * acquireIrKeyData();
+
     static void sendRfKeyData(Key *key);
+    static void sendIrKeyData(Key *key);
+
 
 };
 

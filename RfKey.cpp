@@ -1,5 +1,5 @@
 /*
-  DeviceKey.cpp - rf data foreach key of device
+  RfKey.cpp - rf data foreach key of device
   Saul bertuccio 11 mar 2017
   Released into the public domain.
 */

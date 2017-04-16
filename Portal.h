@@ -54,7 +54,7 @@ const char HTML_DEV_LIST_TPL[] PROGMEM = "<div class=\"row\"><div class=\"col-md
 const char HTML_DEV_LI_TPL[] PROGMEM = "<li><a href=\"#device_{dev_name}\" data-toggle=\"pill\">{dev_name}</a></li>";
 const char HTML_DEV_PANE_TPL[] PROGMEM = "<div class=\"tab-pane\" id=\"device_{dev_name}\"><input type=\"hidden\" name=\"device_name\" value=\"\"><input type=\"hidden\" name=\"device_type\" value=\"\"><div class=\"table-responsive\"><style>.btn-outline{background-color:transparent;border-color:none;}</style><table class=\"table\"><caption><button type=\"button\" class=\"btn btn-outline\" data-action=\"new-device-key\" data-toggle=\"modal\" data-target=\"#device-key-edit\"><span class=\"glyphicon glyphicon-plus-sign\"></span> Aggiungi tasto</button></div></caption><thead class=\"device-keys-header\"></thead><tbody class=\"device-keys-list\"></tbody></table></div></div>";
 const char HTML_DEV_PANE_RF433_TPL[] PROGMEM = "<table id=\"rf433_dev_pane\" class=\"hidden\"><thead class=\"pane_header\"><tr><th class=\"toolbar\"></th><th class=\"col-sm-5\">Nome</th><th>L. Codice</th><th>Codice</th></tr></thead><tbody class=\"pane_body\"><tr class=\"key-row\"><td class=\"text-nowrap\"><button type=\"button\" class=\"btn btn btn-outline\" data-action=\"device-key-delete\" data-toggle=\"modal\" data-target=\"#device-key-delete\"><span class=\"glyphicon glyphicon-minus-sign\"></span></button></td><td class=\"device_key_name\">{name}</td><td class=\"device_key_length\">{length}</td><td class=\"device_key_code\">{code}</td></tr></tbody></table>";
-
+const char HTML_DEV_PANE_IRDA_TPL[] PROGMEM = "<table id=\"irda_dev_pane\" class=\"hidden\"><thead class=\"pane_header\"><tr><th class=\"toolbar\"></th><th class=\"col-sm-5\">Nome</th><th>Codice</th></tr></thead><tbody class=\"pane_body\"><tr class=\"key-row\"><td class=\"text-nowrap\"><button type=\"button\" class=\"btn btn btn-outline\" data-action=\"device-key-delete\" data-toggle=\"modal\" data-target=\"#device-key-delete\"><span class=\"glyphicon glyphicon-minus-sign\"></span></button></td><td class=\"device_key_name\">{name}</td><td class=\"device_key_code\">{code}</td></tr></tbody></table>";
 // Modal
 const char HTML_MODAL_TPL[] PROGMEM = "<div class=\"modal fade\" id=\"{id}\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"{id}\"><div class=\"modal-dialog\" role=\"document\"><div class=\"modal-content\"><div class=\"modal-header\"><button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Annulla\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\" id=\"{id}-title\">{title}</h4></div><div id=\"{id}-body\" class=\"modal-body\">{body}</div><div class=\"modal-footer\"><button type=\"button\" class=\"btn btn-default\" data-dismiss=\"modal\">Annulla</button><button type=\"button\" class=\"btn btn-primary\" onclick=\"return {ok-callback}()\">Conferma</button></div></div></div></div>";
 
@@ -62,6 +62,7 @@ const char HTML_MODAL_TPL[] PROGMEM = "<div class=\"modal fade\" id=\"{id}\" tab
 const char HTML_FORM_EDIT_DEVICE[] PROGMEM = "<form id=\"edit-device-form\" class=\"form-horizontal\" role=\"form\" action=\"javascript:0\"><div class=\"form-group\"><label class=\"col-sm-2 control-label\">Nome</label><div class=\"col-sm-10\"><input type=\"text\" class=\"form-control\" placeholder=\"Nome dispositivo\" name=\"device_name\" pattern=\"^[\\w+]{1,16}$\" title=\"Inserire un nome valido, max 16 caratteri\" required/></div></div><div class=\"form-group\"><label class=\"col-sm-2 control-label\">Tipo</label><div class=\"col-sm-10\"><select name=\"device_type\" class=\"form-control\" required>{device_types}</select></div></div><input type=\"hidden\" name=\"current_device_name\"/></form>";
 // From device key edit
 const char HTML_FORM_EDIT_RF433_KEY[] PROGMEM = "<form class=\"hidden form-horizontal\" id=\"edit-rf433-key-form\" action=\"javascript:0\"><div class=\"form-group\"><label class=\"col-sm-4 control-label\">Tasto</label><div class=\"col-sm-8\"><input type=\"text\" class=\"form-control\" placeholder=\"Nome tasto\" name=\"device_key_name\" pattern=\"^[\\w+]{1,10}$\" title=\"Inserire un nome di max. 10 caratteri.\" required/></div></div><div class=\"form-group\"><label class=\"col-sm-4 control-label\">Dim. Codice</label><div class=\"col-sm-6\"><input type=\"number\" class=\"form-control\" name=\"device_key_length\" pattern=\"^[0-9]+{1,10}$\" title=\"Inserire un numero intero.\" required/></div><div class=\"col-sm-2\"><button type=\"button\" onclick=\"return detectKeyData(this)\" class=\"btn btn-success\" title=\"Rileva automaticamente\"><span class=\"glyphicon glyphicon-refresh\"></span></button></div></div><div class=\"form-group\"><label class=\"col-sm-4 control-label\">Codice</label><div class=\"col-sm-6\"><input type=\"number\" class=\"form-control\" name=\"device_key_code\" pattern=\"^[0-9]+{1,10}$\" title=\"Inserire un numero intero.\" required/></div></div><input type=\"hidden\" name=\"device_name\"/><input type=\"hidden\" name=\"device_type\"/></form>";
+const char HTML_FORM_EDIT_IRDA_KEY[] PROGMEM = "<form class=\"hidden form-horizontal\" id=\"edit-irda-key-form\" action=\"javascript:0\"><div class=\"form-group\"><label class=\"col-sm-4 control-label\">Tasto</label><div class=\"col-sm-8\"><input type=\"text\" class=\"form-control\" placeholder=\"Nome tasto\" name=\"device_key_name\" pattern=\"^[\\w+]{1,10}$\" title=\"Inserire un nome di max. 10 caratteri.\" required/></div></div><div class=\"form-group\"><label class=\"col-sm-4 control-label\">Codice Hex</label><div class=\"col-sm-6\"><input type=\"text\" class=\"form-control\" name=\"device_key_code\" pattern=\"^0x[0-9A-Fa-f]+{1,8}$\" title=\"Inserire un numero esadecimale 32bit.\" placeholder=\"0x00\" required></div><div class=\"col-sm-2\"><button type=\"button\" onclick=\"return detectKeyData(this)\" class=\"btn btn-success\" title=\"Rileva automaticamente\"><span class=\"glyphicon glyphicon-refresh\"></span></button></div></div><input type=\"hidden\" name=\"device_name\"/><input type=\"hidden\" name=\"device_type\"/></form>";
 // HTML Spare
 const char HTML_OPTION_TPL[] PROGMEM = "<option value=\"{value}\">{name}</option>";
 
@@ -123,6 +124,12 @@ const char JAVASCRIPT_DEVICE_ONLOAD[] PROGMEM =
   "        var b = $(\"#device-key-delete\");\n"
   "        b.find(\"i.device-name\").text($(\"#devices-list\").find(\"li.active a\").attr(\"href\").substring(8)),\n"
   "        b.find(\"b.device-key-name\").text($(a.relatedTarget).closest(\"tr.key-row\").children(\"td:eq(1)\").text().trim())\n"
+  "    }), $.each([\"IRDA\", \"RF433\"], function( i, type ) {\n"
+  "           $.each([ \"DEV_PANE\", \"FORM_EDIT\"], function( k, section ) {\n"
+  "              $.get( \"/setup/getKeyPanel\", { device_type : type, template_type : section }, function( data ) {\n"
+  "                 $( \"body\" ).append( data );\n"
+  "              });\n"
+  "           });\n"
   "    });\n"
   "});\n";
 
@@ -161,6 +168,7 @@ class Portal {
     void handleEditDevice();
     void handleSetupDevices();
     void handleDeleteDevice();
+    void handleGetKeyPanel();
     void handleGetDeviceInfo();
     void handleEditDeviceKey();
     void handleAcquireKeyData();

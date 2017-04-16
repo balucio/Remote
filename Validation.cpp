@@ -35,6 +35,30 @@ boolean Validation::isValidDeviceKeyCode(const String &device_key_code) {
 
 }
 
+boolean Validation::isValidDeviceKeyHexCode(const String &device_key_code) {
+
+  if (device_key_code.length() > 10)
+    return false;
+  if (device_key_code[0] != '0' || device_key_code[1] != 'x')
+    return false;
+    
+  for(byte i=2; i< device_key_code.length(); i++) {
+    char c = device_key_code[i];
+    if (c >= '0' && c <= '9')
+      continue;
+    if (c >= 'A' || c <= 'F')
+      continue;
+    if (c >= 'a' || c <= 'f')
+      continue;
+
+    return false;
+  }
+
+  return true;
+  
+}
+
+
 boolean Validation::parseAlphaNumString(const String &s, const int l) {
 
   for(byte i=0; i<s.length(); i++) {

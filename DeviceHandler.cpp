@@ -59,7 +59,6 @@ boolean DeviceHandler::setDevice( const String &device_name ) {
 boolean DeviceHandler::addDeviceKey( String * attr ) {
 
   if (!device) return false;
-  Serial.println ("Aggiungo valori tasto");
   return device->addKey( attr )
     && DeviceHandler::saveDeviceFile( device );
 }
@@ -73,74 +72,6 @@ boolean DeviceHandler::deleteDeviceKey( String &kname ) {
 
 
 Device & DeviceHandler::getDevice() { return *device; }
-
-Device * DeviceHandler::loadDeviceFile( const String &device_name ) {
-
-  String file_name = DATA_DIR + device_name;
-  
-  if (!SPIFFS.exists(file_name)) {
-    Serial.println("GetDevice: file " + file_name + " does not exits");
-    return NULL;
-  }
-
-  File f = SPIFFS.open( file_name, "r");
-
-  if (!f) {
-    Serial.println("Errore apertura file dispositivo");
-    return NULL;
-  }
-
-  // First line is device type
-  String line = f.readStringUntil(DeviceHandler::EOL);
-
-  line.remove( line.length() - 1);  
-  if (line == "") {
-    f.close();
-    Serial.println("Impossibile leggere il tipo di dispositivo");
-    return NULL;
-  }
-
-  Device * d = new Device( device_name, line );
-
-  if (!d) {
-    f.close();
-    return NULL;
-  }
-
-  int num = d->getKeysPropertyNum();
-
-  String * k_attr = new String[num];
-
-  while ( f.available() ) {
-    
-    line = f.readStringUntil(DeviceHandler::EOL);
-
-    if (line.length() == 1)
-      continue;
-
-    line.setCharAt(line.length() - 1, ';');
-
-    int s = -1,  e = 0, i = 0;
-
-    while ( i < num ) {
-
-      e = line.indexOf(DeviceHandler::SEP, ++s);
-
-      if ( e == -1 )
-        break;
-       
-      k_attr[i++] = line.substring(s, e);
-      s = e;
-    }
-
-    if (i == num)
-      d->addKey(k_attr);
-  }
-
-  delete[] k_attr;
-  f.close();
-  return d;
-}
 
 boolean DeviceHandler::renameDevice( const String &new_name) {
 
@@ -188,29 +119,94 @@ boolean DeviceHandler::saveDevice() {
   return DeviceHandler::saveDeviceFile( device );
 }
 
+Device * DeviceHandler::loadDeviceFile( const String &device_name ) {
+
+  String file_name = DATA_DIR + device_name;
+  
+  if (!SPIFFS.exists(file_name)) {
+    Serial.print("Errore: impossibile caricare il file ");
+    Serial.println(file_name);
+    return NULL;
+  }
+
+  File f = SPIFFS.open( file_name, "r");
+
+  if (!f) {
+    Serial.println("Errore apertura file dispositivo");
+    return NULL;
+  }
+
+  // First line is device type
+  String line = f.readStringUntil(DeviceHandler::EOL);
+
+  if (line == "") {
+    f.close();
+    Serial.println("Impossibile leggere il tipo di dispositivo");
+    return NULL;
+  }
+
+  Device * d = new Device( device_name, line );
+
+  if (!d) {
+    f.close();
+    return NULL;
+  }
+
+  int num = d->getKeysPropertyNum();
+
+  String * k_attr = new String[num];
+
+  while ( f.available() ) {
+    
+    line = f.readStringUntil(DeviceHandler::EOL);
+
+    if (line.length() == 1)
+      continue;
+
+    int s = -1,  e = 0, i = 0;
+
+    while ( i < num ) {
+
+      e = line.indexOf(DeviceHandler::SEP, ++s);
+      if ( e == -1 )
+        break;
+      k_attr[i++] = line.substring(s, e);
+      s = e;
+    }
+
+    if (i == num)
+      d->addKey(k_attr);
+  }
+
+  delete[] k_attr;
+  f.close();
+  return d;
+}
+
 boolean DeviceHandler::saveDeviceFile( Device * device ) {
 
   String fname = DATA_DIR + device->getName();
   File f = SPIFFS.open(fname, "w");
 
   if (!f) {
-    Serial.println("SaveDevice Error: unable to open " + fname + " file");
+    Serial.print("Errore: impossibile aprire in scrittura il file ");
+    Serial.println(fname);
     return false;
   }
 
   // Salvo il tipo di dispositivo
-  f.println( device->getType());
+  f.print( device->getType() + DeviceHandler::EOL);
 
   int attr_num = device->getKeysPropertyNum();
   Key * k = device->getKeys();
 
   while (k) {
-
-    for (int i = 0; i < attr_num - 1; i++) {
-        String attr = k->getPropertyById(i);
-        f.print(attr + DeviceHandler::SEP);
+    String line = "";
+    for (int i = 0; i < attr_num; i++) {
+        line += k->getPropertyById(i) + DeviceHandler::SEP;
     }
-    f.print(k->getPropertyById(attr_num - 1 ) + DeviceHandler::EOL);
+    line += DeviceHandler::EOL;
+    f.print(line);
     k = k->getNext();
   }
 

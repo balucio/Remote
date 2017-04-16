@@ -19,7 +19,7 @@ class Validation {
     static boolean isValidDeviceKeyName(const String &device_key_name);
     static boolean isValidDeviceKeyLen(const String &device_key_len);
     static boolean isValidDeviceKeyCode(const String &device_key_code);
-
+    static boolean isValidDeviceKeyHexCode(const String &device_key_code);
   private:
 
       static boolean parseAlphaNumString(const String &s, const int l);

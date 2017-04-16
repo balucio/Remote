@@ -6,7 +6,7 @@
 
 #include "Device.h"
 
-String Device::TYPES[Device::TYPE_NUM] = { "IRDA", "RF433"};
+String Device::TYPES[Device::TYPE_NUM] = { "IRDA", "RF433" };
 String Device::TYPES_DESCRIPTION[Device::TYPE_NUM] = { "Infrarossi", "Radio Freq. 433Mhz" };
 
 Device::Device(const String &dev_name, const String &dev_type)
@@ -33,18 +33,20 @@ boolean Device::isValidPropertyById(int id, const String &val) {
   
   // IRDA
   if (dev_type == TYPES[0])
-    return false;
+    return IrKey::validations[id](val);
     
   // RF433
   if (dev_type == TYPES[1])
     return RfKey::validations[id](val);
+
+  return false;
 }
 
 int Device::getKeysPropertyNum() {
 
   // IRDA
   if (dev_type == TYPES[0])
-    return 0;
+    return IrKey::props_num;
     
   // RF433
   if (dev_type == TYPES[1])
@@ -59,7 +61,7 @@ String * Device::getKeysPropertyNames() {
   
   // IRDA
   if (dev_type == TYPES[0])
-    return NULL;
+    return getProperties(IrKey::props_names, IrKey::props_num);
     
   // RF433
   if (dev_type == TYPES[1])
@@ -80,7 +82,7 @@ boolean Device::addKey(String * key_data) {
 
   // IRDA
   if (dev_type == TYPES[0])
-    return false;
+    key = new IrKey( key_data[0], key_data[1] );
     
   // RF433
   if (dev_type == TYPES[1])
@@ -101,7 +103,6 @@ boolean Device::addKey(String * key_data) {
 
 boolean Device::sendKeyData(const String & key_name) {
 
-  Serial.println(key_name);
   Key * k = findPreviousKeyByName(key_name);
 
   if ( k == NULL) {
@@ -115,7 +116,7 @@ boolean Device::sendKeyData(const String & key_name) {
   }
 
   if (dev_type == TYPES[0])
-    return false;
+    Device::sendIrKeyData(k);
     
   // RF433
   if (dev_type == TYPES[1]) {
@@ -128,10 +129,10 @@ boolean Device::sendKeyData(const String & key_name) {
 Key * Device::acquireKeyData() {
 
   // IRDA
-  Key * k = NULL;
+  Key * k;
   
   if (dev_type == TYPES[0])
-    k = NULL;
+    k = Device::acquireIrKeyData();
     
   // RF433
   if (dev_type == TYPES[1])
@@ -207,12 +208,71 @@ String * Device::getProperties(const String names[], int len) {
   return props;
 }
 
+
+void Device::sendIrKeyData(Key *key) {
+
+  static String hex_decode = "0123456789ABCDEF"; 
+  IrKey *k = static_cast<IrKey *>(key);
+  String code = k->getCode().substring(2);
+  code.toUpperCase();
+
+  if (code.length() % 2 != 0) {
+    Serial.println("Errore: Codice da inviare valido");
+    return;
+  }
+
+  SoftwareSerial sw(IR_RX_PIN, IR_TX_PIN, false, 16);
+  int i=0;
+  sw.begin(9600);
+  // Protocollo
+  sw.write(0xA1);
+  sw.write(0xF1);
+  while (i < code.length()) {
+    char n = hex_decode.indexOf(code[i++]) << 4;
+    n +=  hex_decode.indexOf(code[i++]);
+    sw.write(n);
+  }
+}
+
+
 void Device::sendRfKeyData(Key *key) {
   RCSwitch sw = RCSwitch();
   RfKey *k = static_cast<RfKey *>(key);
   sw.enableTransmit(Device::RF_TX_PIN);
   sw.send(k->getCode(), k->getLength());
   sw.disableTransmit();
+}
+
+Key * Device::acquireIrKeyData() {
+
+  static char const hex_encode[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+  char code[11] = {'0', 'x', '\0'};
+  SoftwareSerial sw(IR_RX_PIN, IR_TX_PIN, false, 16);
+  sw.begin(9600);
+  boolean is_code_ok = false;
+  int attempt = 3;
+  for (int i=0; i < attempt; i++) {
+    delay(500);
+    int p = 2;
+    while (sw.available() > 0 && p < 15) {
+      char c = sw.read();
+      code[p++] = hex_encode[ ( c & 0xF0 ) >> 4  ];
+      code[p++] = hex_encode[ (c & 0x0F ) ];
+      delay(40);
+    }
+    sw.flush();
+    code[p] = '\0';
+    if (p>4) {
+      is_code_ok=true;
+      break;
+    }
+  }
+
+  IrKey * ir = NULL;
+  if (is_code_ok) {
+    ir = new IrKey("DUMMY", String(code));
+  }
+  return ir;
 }
 
 Key * Device::acquireRfKeyData() {
