@@ -1,7 +1,7 @@
 # Remote
 ### ESP8266 - Universal Remote
 
-**L'applicativo è ancora in via di sviluppo**
+**Prima versione stabile 0.5**
 
 *****
 
