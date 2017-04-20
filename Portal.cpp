@@ -154,6 +154,7 @@ void Portal::handleSendKey() {
   json += (error ? String("true") : String("false"));
   json += String(",\"message\":\"") + msg + "\"}";
 
+  server->sendHeader("Access-Control-Allow-Origin", "*");
   server->send( 200, "text/json", json );
 }
 
