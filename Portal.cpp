@@ -40,6 +40,16 @@ boolean Portal::setup() {
   server->on("/setup/wifilist", std::bind(&Portal::handleWifiList, this));
   server->on("/setup/savewifi", std::bind(&Portal::handleSaveWifi, this));
   server->on("/sendKey", std::bind(&Portal::handleSendKey, this));
+
+  /* For CORS options requests
+  server->on("/sendKey", HTTP_OPTIONS, [&]() {
+      server->sendHeader("Access-Control-Max-Age", "10000");
+      server->sendHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
+      server->sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+      server->send(200, "text/plain", "" );
+    });
+  */
+
   
   if (!ap_mode) {
     server->serveStatic("/js", SPIFFS, "/js");
@@ -152,9 +162,7 @@ void Portal::handleSendKey() {
 
   String json = "{ \"error\" :";
   json += (error ? String("true") : String("false"));
-  json += String(",\"message\":\"") + msg + "\"}";
-
-  server->sendHeader("Access-Control-Allow-Origin", "*");
+  json += String(",\"message\" : \"") + msg + "\" }";
   server->send( 200, "text/json", json );
 }
 
