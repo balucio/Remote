@@ -13,7 +13,9 @@ La pagina web di configurazione consente di definire diversi *telecomandi* (devi
 
 La configurazione viene salvata in modo permanentemente nella memoria flash dell'**ESP-12E**.
 
-Configurati **telecomandi** e i relativi **tasti** il dispositivo è in grado di inviare il codice corretto al dispositivo semplicemente usando l'url: **http://<ip_esp-12e>/sendKey/<nomedispositivo>/<nometasto>**
+Configurati **telecomandi** e i relativi **tasti** il dispositivo è in grado di inviare il codice corretto al dispositivo semplicemente usando l'url: 
+
+**http://<ip_esp-12e>/sendKey/\<nomedispositivo\>/\<nometasto\>**
 
 #### Implementazione
 
