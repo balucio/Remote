@@ -17,7 +17,7 @@ The Remotes and Keys configuration is saved on the ESP Flash.
 In order to send specific key you need to call:
 * **http://<esp-12e-IP\>/sendKey/\<remoteName\>/\<keyName\>**
 
-In order to configure new Remotes and keys you need to access the exposed web app @http://<esp-12e-IP\>
+In order to configure new Remotes and keys you need to access the exposed web app @ `http://<esp-12e-IP\>`
 
 
 **Prima versione stabile 0.5**
