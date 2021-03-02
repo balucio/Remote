@@ -1,6 +1,24 @@
 # Remote
 ### ESP8266 - Universal Remote
 
+Excuse me but complete documentation is only in Italian.
+
+#### Short english documentation
+
+Universal Remote is an *ESP Application* written in c++ using ArduinoIDE, whose purpose it to simulate an IRDA and RF remote.
+In order to use this application you need:
+* ESP 12E (best a DevKit)
+* RF315/433Mhz module, trasmitter and receiver
+* YS-IRTM a Serial IRDA receiver and trasmitter
+
+Using a web gui you can configure some Named Remote device (IRDA or RF) and for each of them a Key Code. The key code can be autodetected from original remote.
+The Remotes and Keys configuration is saved on the ESP Flash.
+
+In order to send specific key you need to call:
+* **http://<esp-12e-IP\>/sendKey/\<remoteName\>/\<keyName\>**
+
+
+
 **Prima versione stabile 0.5**
 
 *****
