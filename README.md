@@ -17,7 +17,9 @@ The Remotes and Keys configuration is saved on the ESP Flash.
 In order to send specific key you need to call:
 * **http://<esp-12e-IP\>/sendKey/\<remoteName\>/\<keyName\>**
 
-In order to configure new Remotes and keys you need to access the exposed web app @ `http://<esp-12e-IP\>`
+In order to configure new Remotes and keys you need to access the exposed web app @ `http://<esp-12e-IP>`
+
+The WebApp needs the file _devicesFunc.js_ present on the ESP Flash. In order to transfer this file in ESP Flash you can use the Arduino Plugin _Sketch Data Uploader_
 
 
 **Prima versione stabile 0.5**
