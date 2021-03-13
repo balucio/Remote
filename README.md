@@ -5,22 +5,21 @@ Excuse me but complete documentation is only in Italian.
 
 #### Short english documentation
 
-Universal Remote is an *ESP Application* written in c++ using ArduinoIDE, whose purpose it to simulate an IRDA and RF remote.
+Universal Remote is an *ESP Application* written in c++ using ArduinoIDE. The purpose is to simulate an IR (infrared) and RF remote.
 In order to use this application you need:
 * ESP 12E (best a DevKit)
 * RF315/433Mhz module, trasmitter and receiver
 * YS-IRTM a Serial IRDA receiver and trasmitter
 
-Using a web gui you can configure some Named Remote device (IRDA or RF) and for each of them a Key Code. The key code can be autodetected from original remote.
-The Remotes and Keys configuration is saved on the ESP Flash.
+Using the web gui you can configure *Named Remote device* (IRDA or RF) and for each of them any number of *Key Codes*. A button on web gui can be used to detect from original remote the _key code_.
+The Remotes and Keys configuration are saved on the ESP Flash.
 
-In order to send specific key you need to call:
-* **http://<esp-12e-IP\>/sendKey/\<remoteName\>/\<keyName\>**
+In order to send specific _key code_ you need to call:
+* **http://<esp-12e-IP\>/sendKey/\<remoteDeviceName\>/\<keyName\>**
 
 In order to configure new Remotes and keys you need to access the exposed web app @ `http://<esp-12e-IP>`
 
 The WebApp needs the file _devicesFunc.js_ present on the ESP Flash. In order to transfer this file in ESP Flash you can use the Arduino Plugin _Sketch Data Uploader_
-
 
 **Prima versione stabile 0.5**
 
